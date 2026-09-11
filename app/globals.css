@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --gl-red: #E53935;
+  --gl-orange: #FF6F00;
+  --gl-blue: #1565C0;
+  --gl-dark: #0F172A;
+  --gl-light: #F8FAFC;
+  --gl-success: #22C55E;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.font-sans {
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+.font-mono {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(-2deg); }
+  50% { transform: translateY(-14px) rotate(-2deg); }
+}
+@keyframes float-med {
+  0%, 100% { transform: translateY(0px) rotate(3deg); }
+  50% { transform: translateY(-18px) rotate(3deg); }
+}
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0px) rotate(-4deg); }
+  50% { transform: translateY(-10px) rotate(-4deg); }
+}
+.animate-float-slow { animation: float-slow 5s ease-in-out infinite; }
+.animate-float-med { animation: float-med 4.2s ease-in-out infinite; }
+.animate-float-fast { animation: float-fast 3.6s ease-in-out infinite; }
+
+@keyframes flip-in {
+  0% { transform: rotateX(-90deg); opacity: 0; }
+  100% { transform: rotateX(0deg); opacity: 1; }
+}
+.flip-digit {
+  display: inline-block;
+  transform-origin: center;
+  animation: flip-in 0.45s ease-out;
+  backface-visibility: hidden;
+}
+
+@keyframes pulse-strong {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.65; transform: scale(1.04); }
+}
+.animate-pulse-strong { animation: pulse-strong 1s ease-in-out infinite; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
