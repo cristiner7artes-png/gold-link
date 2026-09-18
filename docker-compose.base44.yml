@@ -1,0 +1,24 @@
+services:
+  web:
+    image: node:22
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      - BASE44_PUBLIC_HOST_SUFFIX=${BASE44_PUBLIC_HOST_SUFFIX}
+      - NODE_ENV=development
+    volumes:
+      - ./:/app
+      - web_node_modules:/app/node_modules
+      - web_next_cache:/app/.next
+    command: sh -c "yarn install --frozen-lockfile || yarn install && yarn dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+
+volumes:
+  web_node_modules:
+  web_next_cache:
