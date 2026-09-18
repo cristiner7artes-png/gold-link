@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getStore } from '@netlify/blobs';
-import { v4 as uuidv4 } from 'uuid';
-import { desc, eq, sql } from 'drizzle-orm';
-import { db } from '../../../db/index';
-import { products, siteStats } from '../../../db/schema';
+import productsData from '../../../products.json';
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'usergold';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '251831';
@@ -15,6 +12,11 @@ function ok(data, status = 200) {
 function err(message, status = 400) {
   return NextResponse.json({ error: message }, { status });
 }
+
+const PRODUCTS = Array.isArray(productsData) ? productsData : [];
+const LIST_ORDER = [...PRODUCTS].sort(
+  (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+);
 
 function isAuthed(request) {
   const auth = request.headers.get('authorization') || '';
@@ -38,100 +40,14 @@ async function handleLogin(request) {
 }
 
 async function handleListProducts() {
-  const items = await db.select().from(products).orderBy(desc(products.createdAt));
-  return ok(items);
-}
-
-async function handleGetVisitors() {
-  const [stats] = await db
-    .select({ total: siteStats.totalVisitors })
-    .from(siteStats)
-    .where(eq(siteStats.id, 'global'));
-  return ok({ total: stats?.total || 0 });
-}
-
-async function handleRegisterVisitor() {
-  const [stats] = await db
-    .insert(siteStats)
-    .values({ id: 'global', totalVisitors: 1, updatedAt: new Date() })
-    .onConflictDoUpdate({
-      target: siteStats.id,
-      set: {
-        totalVisitors: sql`${siteStats.totalVisitors} + 1`,
-        updatedAt: new Date(),
-      },
-    })
-    .returning({ total: siteStats.totalVisitors });
-  return ok({ total: stats?.total || 0 });
-}
-
-async function handleCreateProduct(request) {
-  if (!isAuthed(request)) return err('Não autorizado', 401);
-  try {
-    const b = await request.json();
-    const now = new Date();
-    const doc = {
-      id: uuidv4(),
-      nome: String(b.nome || '').trim(),
-      imagem: String(b.imagem || '').trim(),
-      preco: Number(b.preco) || 0,
-      precoAntigo: Number(b.precoAntigo) || 0,
-      desconto: Number(b.desconto) || 0,
-      categoria: String(b.categoria || 'Eletrônicos'),
-      rating: Number(b.rating) || 0,
-      reviews: Number(b.reviews) || 0,
-      freteGratis: Boolean(b.freteGratis),
-      link: String(b.link || '').trim(),
-      badge: b.badge ? String(b.badge) : null,
-      createdAt: now,
-      updatedAt: now,
-    };
-    if (!doc.nome || !doc.imagem || !doc.link) {
-      return err('Nome, imagem e link são obrigatórios', 400);
-    }
-    if (!doc.desconto && doc.precoAntigo > doc.preco) {
-      doc.desconto = Math.round(((doc.precoAntigo - doc.preco) / doc.precoAntigo) * 100);
-    }
-    const [created] = await db.insert(products).values(doc).returning();
-    return ok(created, 201);
-  } catch (e) {
-    return err('Erro ao criar: ' + e.message, 500);
-  }
-}
-
-async function handleUpdateProduct(request, id) {
-  if (!isAuthed(request)) return err('Não autorizado', 401);
-  try {
-    const b = await request.json();
-    const update = { updatedAt: new Date() };
-    const fields = ['nome', 'imagem', 'categoria', 'link', 'badge'];
-    for (const f of fields) if (b[f] !== undefined) update[f] = b[f] === null ? null : String(b[f]);
-    const numFields = ['preco', 'precoAntigo', 'desconto', 'rating', 'reviews'];
-    for (const f of numFields) if (b[f] !== undefined) update[f] = Number(b[f]);
-    if (b.freteGratis !== undefined) update.freteGratis = Boolean(b.freteGratis);
-
-    if (update.precoAntigo > 0 && update.preco > 0 && (update.desconto === undefined || update.desconto === 0)) {
-      update.desconto = Math.round(((update.precoAntigo - update.preco) / update.precoAntigo) * 100);
-    }
-
-    const [doc] = await db.update(products).set(update).where(eq(products.id, id)).returning();
-    if (!doc) return err('Produto não encontrado', 404);
-    return ok(doc);
-  } catch (e) {
-    return err('Erro ao atualizar: ' + e.message, 500);
-  }
-}
-
-async function handleDeleteProduct(request, id) {
-  if (!isAuthed(request)) return err('Não autorizado', 401);
-  const [deleted] = await db.delete(products).where(eq(products.id, id)).returning({ id: products.id });
-  if (!deleted) return err('Produto não encontrado', 404);
-  return ok({ ok: true, id });
+  return ok(LIST_ORDER);
 }
 
 async function handleVerify(request) {
   return ok({ valid: isAuthed(request) });
 }
+
+/* ---------- Mercado Livre scraper (preenchimento automático) ---------- */
 
 const ALLOWED_PRODUCT_HOSTS = [
   'meli.la',
@@ -564,17 +480,6 @@ async function router(request, context) {
     if (path === 'banner' && (method === 'PUT' || method === 'POST')) return handleSaveBanner(request);
 
     if (path === 'products' && method === 'GET') return handleListProducts();
-    if (path === 'products' && method === 'POST') return handleCreateProduct(request);
-
-    if (path === 'visitors' && method === 'GET') return handleGetVisitors();
-    if (path === 'visitors' && method === 'POST') return handleRegisterVisitor();
-
-    const match = path.match(/^products\/([\w-]+)$/);
-    if (match) {
-      const id = match[1];
-      if (method === 'PUT' || method === 'PATCH') return handleUpdateProduct(request, id);
-      if (method === 'DELETE') return handleDeleteProduct(request, id);
-    }
 
     return err('Rota não encontrada: ' + path, 404);
   } catch (e) {

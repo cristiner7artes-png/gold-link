@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Flame, LogOut, Plus, Trash2, Pencil, X, Save, LogIn, Package, Sparkles, Download, ImagePlus } from 'lucide-react';
+import { Flame, LogOut, Plus, X, Save, LogIn, Package, Sparkles, Download, Copy, Check, ImagePlus } from 'lucide-react';
 
 const STORAGE_KEY = 'goldlink_admin_token';
 const CATEGORIAS = ['Eletrônicos', 'Casa', 'Moda', 'Esportes', 'Beleza', 'Infantil'];
@@ -45,6 +45,32 @@ const emptyForm = {
   link: '',
   badge: '',
 };
+
+function productToJson(form) {
+  const preco = Number(form.preco) || 0;
+  const precoAntigo = Number(form.precoAntigo) || 0;
+  const now = new Date().toISOString();
+  let desconto = Number(form.desconto) || 0;
+  if (!desconto && precoAntigo > preco) {
+    desconto = Math.round(((precoAntigo - preco) / precoAntigo) * 100);
+  }
+  return {
+    id: crypto.randomUUID(),
+    nome: String(form.nome || '').trim(),
+    imagem: String(form.imagem || '').trim(),
+    preco,
+    precoAntigo,
+    desconto,
+    categoria: form.categoria || 'Eletrônicos',
+    rating: Number(form.rating) || 0,
+    reviews: Number(form.reviews) || 0,
+    freteGratis: Boolean(form.freteGratis),
+    link: String(form.link || '').trim(),
+    badge: form.badge || null,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
 
 export default function AdminPage() {
   const [token, setToken] = useState(null);
@@ -207,30 +233,8 @@ function Dashboard({ token, onLogout }) {
 
   useEffect(() => { reload(); }, []);
 
-  async function handleDelete(id) {
-    if (!confirm('Excluir esta oferta?')) return;
-    const r = await fetch(`/api/products/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    await readApiResponse(r, 'Não foi possível excluir a oferta');
-    reload();
-  }
-
-  async function handleSave(form, id) {
-    const url = id ? `/api/products/${id}` : '/api/products';
-    const method = id ? 'PUT' : 'POST';
-    const r = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(form),
-    });
-    await readApiResponse(r, 'Não foi possível salvar a oferta');
-    setEditing(null);
-    reload();
+  function newOffer() {
+    setEditing('new');
   }
 
   return (
@@ -268,14 +272,17 @@ function Dashboard({ token, onLogout }) {
             <p className="text-sm text-slate-500">
               <Package className="inline w-4 h-4 mr-1 -mt-0.5" />
               {products.length} {products.length === 1 ? 'oferta cadastrada' : 'ofertas cadastradas'}
+              <span className="ml-2 text-[11px] font-semibold text-slate-400">
+                (produtos são servidos de products.json no repositório)
+              </span>
             </p>
           </div>
           <div className="flex flex-col items-stretch sm:items-end gap-2">
             <button
-              onClick={() => setEditing('new')}
+              onClick={newOffer}
               className="inline-flex items-center justify-center gap-2 bg-[#E53935] hover:bg-[#c62828] text-white font-bold px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition"
             >
-              <Plus className="w-5 h-5" /> Nova Oferta
+              <Plus className="w-5 h-5" /> Colocar Oferta
             </button>
             <button
               onClick={() => setBannerOpen(true)}
@@ -298,7 +305,7 @@ function Dashboard({ token, onLogout }) {
           <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-200">
             <Package className="w-12 h-12 mx-auto text-slate-300 mb-3" />
             <h3 className="font-bold text-[#0F172A]">Nenhuma oferta cadastrada</h3>
-            <p className="text-sm text-slate-500 mt-1">Clique em “Nova Oferta” para começar.</p>
+            <p className="text-sm text-slate-500 mt-1">Clique em “Colocar Oferta” para começar.</p>
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-black/5 overflow-hidden shadow-sm">
@@ -311,7 +318,8 @@ function Dashboard({ token, onLogout }) {
                     <th className="text-right px-4 py-3">Preço</th>
                     <th className="text-right px-4 py-3">Desc.</th>
                     <th className="text-center px-4 py-3">Frete</th>
-                    <th className="text-right px-4 py-3">Ações</th>
+                    <th className="text-center px-4 py-3">Avaliação</th>
+                    <th className="text-center px-4 py-3">Link</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -345,23 +353,18 @@ function Dashboard({ token, onLogout }) {
                       <td className="px-4 py-3 text-center">
                         {p.freteGratis ? <span className="text-[#22C55E] font-bold">✓</span> : <span className="text-slate-300">–</span>}
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="inline-flex gap-1">
-                          <button
-                            onClick={() => setEditing(p)}
-                            className="p-2 rounded-lg text-[#1565C0] hover:bg-blue-50 transition"
-                            title="Editar"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(p.id)}
-                            className="p-2 rounded-lg text-[#E53935] hover:bg-red-50 transition"
-                            title="Excluir"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                      <td className="px-4 py-3 text-center text-xs text-slate-400">
+                        {p.rating > 0 ? `${Number(p.rating).toFixed(1)} (${p.reviews})` : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <a
+                          href={p.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-semibold text-[#1565C0] hover:underline"
+                        >
+                          Ver ↗
+                        </a>
                       </td>
                     </tr>
                   ))}
@@ -384,20 +387,20 @@ function Dashboard({ token, onLogout }) {
         <ProductModal
           initial={editing === 'new' ? emptyForm : editing}
           onClose={() => setEditing(null)}
-          onSave={handleSave}
-          token={token}
+          products={products}
         />
       )}
     </div>
   );
 }
 
-function ProductModal({ initial, onClose, onSave, token }) {
+function ProductModal({ initial, onClose, products }) {
   const [form, setForm] = useState({ ...emptyForm, ...initial, badge: initial.badge || '' });
-  const [saving, setSaving] = useState(false);
   const [scraping, setScraping] = useState(false);
   const [error, setError] = useState('');
   const [scrapeMsg, setScrapeMsg] = useState('');
+  const [savedJson, setSavedJson] = useState(null); // string do JSON gerado
+  const [copied, setCopied] = useState(false);
   const isEdit = Boolean(initial.id);
 
   function up(k, v) { setForm((f) => ({ ...f, [k]: v })); }
@@ -413,7 +416,7 @@ function ProductModal({ initial, onClose, onSave, token }) {
     try {
       const r = await fetch('/api/admin/scrape', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: form.link }),
       });
       const d = await readApiResponse(r, 'Não foi possível buscar os dados do produto');
@@ -446,26 +449,73 @@ function ProductModal({ initial, onClose, onSave, token }) {
     }
   }
 
-  async function submit(e) {
+  function submit(e) {
     e.preventDefault();
-    setSaving(true);
     setError('');
     try {
-      const payload = {
-        ...form,
-        preco: Number(form.preco) || 0,
-        precoAntigo: Number(form.precoAntigo) || 0,
-        desconto: Number(form.desconto) || 0,
-        rating: Number(form.rating) || 0,
-        reviews: Number(form.reviews) || 0,
-        badge: form.badge || null,
-      };
-      await onSave(payload, isEdit ? initial.id : null);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setSaving(false);
+      const entry = productToJson(form);
+      const filename = `products-${entry.id.slice(0, 8)}.json`;
+      setSavedJson({ filename, json: JSON.stringify(entry, null, 2) + '\n' });
+    } catch (e2) {
+      setError(e2.message);
     }
+  }
+
+  function copyJson() {
+    if (!savedJson) return;
+    navigator.clipboard
+      .writeText(savedJson.json)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {});
+  }
+
+  function downloadJson() {
+    if (!savedJson) return;
+    const blob = new Blob([savedJson.json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = savedJson.filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function mergePreview() {
+    if (!savedJson) return null;
+    try {
+      const entry = JSON.parse(savedJson.json);
+      const list = [entry, ...products.filter((p) => p.id !== entry.id)];
+      return JSON.stringify(list, null, 2) + '\n';
+    } catch {
+      return null;
+    }
+  }
+
+  function copyMerged() {
+    const merged = mergePreview();
+    if (!merged) return;
+    navigator.clipboard
+      .writeText(merged)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {});
+  }
+
+  function downloadMerged() {
+    const merged = mergePreview();
+    if (!merged) return;
+    const blob = new Blob([merged], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'products.json';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -475,7 +525,7 @@ function ProductModal({ initial, onClose, onSave, token }) {
         className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8"
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-bold">{isEdit ? 'Editar oferta' : 'Nova oferta'}</h2>
+          <h2 className="text-lg font-bold">Colocar oferta</h2>
           <button type="button" onClick={onClose} className="p-1 rounded hover:bg-slate-100">
             <X className="w-5 h-5" />
           </button>
@@ -493,7 +543,6 @@ function ProductModal({ initial, onClose, onSave, token }) {
             <div className="mt-3 flex gap-2">
               <input
                 type="url"
-                required
                 value={form.link}
                 onChange={(e) => up('link', e.target.value)}
                 className={inputCls + ' flex-1'}
@@ -572,13 +621,73 @@ function ProductModal({ initial, onClose, onSave, token }) {
           {error && <div className="text-sm text-[#E53935] bg-red-50 border border-red-100 px-3 py-2 rounded-lg">{error}</div>}
         </div>
 
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-slate-600 hover:bg-white font-semibold text-sm">Cancelar</button>
-          <button type="submit" disabled={saving} className="inline-flex items-center gap-2 bg-[#22C55E] hover:bg-[#16a34a] disabled:opacity-60 text-white font-bold px-5 py-2 rounded-lg shadow">
-            <Save className="w-4 h-4" />
-            {saving ? 'Salvando...' : 'Salvar'}
-          </button>
-        </div>
+        {savedJson ? (
+          <div className="border-t border-slate-100 bg-[#F8FAFC] px-6 py-4 space-y-3">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <Check className="w-4 h-4 text-[#22C55E]" />
+              Oferta pronta! Salve em products.json
+            </div>
+            <p className="text-xs text-slate-600">
+              Os produtos ficam no arquivo <code className="bg-white border border-slate-200 px-1 py-0.5 rounded text-[11px]">products.json</code> do
+              repositório. Copie ou baixe o JSON abaixo e cole no arquivo (na posição desejada da lista), depois faça commit — o
+              site atualiza no próximo deploy.
+            </p>
+            <pre className="max-h-40 overflow-auto bg-[#0F172A] text-[#7DD3FC] text-[11px] leading-relaxed rounded-lg p-3 font-mono">
+              {savedJson.json}
+            </pre>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={copyJson}
+                className="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-[#0F172A] font-bold text-sm px-4 py-2 rounded-lg shadow-sm transition"
+              >
+                <Copy className="w-4 h-4" />
+                {copied ? 'Copiado!' : 'Copiar JSON'}
+              </button>
+              <button
+                type="button"
+                onClick={downloadJson}
+                className="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-[#0F172A] font-bold text-sm px-4 py-2 rounded-lg shadow-sm transition"
+              >
+                <Download className="w-4 h-4" />
+                Baixar JSON
+              </button>
+              <button
+                type="button"
+                onClick={copyMerged}
+                className="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-[#0F172A] font-bold text-sm px-4 py-2 rounded-lg shadow-sm transition"
+              >
+                <Copy className="w-4 h-4" />
+                Copiar products.json completo
+              </button>
+              <button
+                type="button"
+              onClick={downloadMerged}
+                className="inline-flex items-center gap-2 bg-[#22C55E] hover:bg-[#16a34a] text-white font-bold text-sm px-4 py-2 rounded-lg shadow-sm transition"
+              >
+                <Download className="w-4 h-4" />
+                Baixar products.json completo
+              </button>
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 rounded-lg text-slate-600 hover:bg-white font-semibold text-sm"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50">
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-slate-600 hover:bg-white font-semibold text-sm">Cancelar</button>
+            <button type="submit" className="inline-flex items-center gap-2 bg-[#22C55E] hover:bg-[#16a34a] text-white font-bold px-5 py-2 rounded-lg shadow">
+              <Save className="w-4 h-4" />
+              Gerar JSON
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );
