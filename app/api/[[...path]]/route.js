@@ -114,6 +114,67 @@ async function handleCreateProduct(request) {
   }
 }
 
+async function handleUpdateProduct(request, id) {
+  if (!isAuthed(request)) return err('Não autorizado', 401);
+  try {
+    const body = await request.json();
+    const preco = Number(body.preco) || 0;
+    const precoAntigo = Number(body.precoAntigo) || 0;
+    let desconto = Number(body.desconto) || 0;
+    if (!desconto && precoAntigo > preco && precoAntigo > 0) {
+      desconto = Math.round(((precoAntigo - preco) / precoAntigo) * 100);
+    }
+    const nome = String(body.nome || '').trim();
+    const imagem = String(body.imagem || '').trim();
+    if (!nome) return err('Informe o nome do produto', 400);
+    if (!imagem) return err('Informe a URL da imagem', 400);
+    if (!preco) return err('Informe o preço do produto', 400);
+
+    const update = {
+      nome,
+      imagem,
+      preco,
+      precoAntigo,
+      desconto,
+      categoria: String(body.categoria || 'Eletrônicos'),
+      rating: Number(body.rating) || 0,
+      reviews: Number(body.reviews) || 0,
+      freteGratis: Boolean(body.freteGratis),
+      link: String(body.link || '').trim(),
+      badge: body.badge || null,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const collection = await getProductsCollection();
+    await ensureSeeded(collection);
+    const result = await collection.findOneAndUpdate(
+      { id },
+      { $set: update },
+      { returnDocument: 'after', projection: { _id: 0 } }
+    );
+    const doc = result?.value ?? result;
+    if (!doc || !doc.id) return err('Oferta não encontrada', 404);
+    return ok(doc);
+  } catch (e) {
+    console.error('[v0] Erro ao atualizar produto:', e.message);
+    return err('Não foi possível atualizar a oferta: ' + e.message, 500);
+  }
+}
+
+async function handleDeleteProduct(request, id) {
+  if (!isAuthed(request)) return err('Não autorizado', 401);
+  try {
+    const collection = await getProductsCollection();
+    await ensureSeeded(collection);
+    const result = await collection.deleteOne({ id });
+    if (!result.deletedCount) return err('Oferta não encontrada', 404);
+    return ok({ deleted: true, id });
+  } catch (e) {
+    console.error('[v0] Erro ao remover produto:', e.message);
+    return err('Não foi possível remover a oferta: ' + e.message, 500);
+  }
+}
+
 async function handleVerify(request) {
   return ok({ valid: isAuthed(request) });
 }
@@ -552,6 +613,14 @@ async function router(request, context) {
 
     if (path === 'products' && method === 'GET') return handleListProducts();
     if (path === 'products' && method === 'POST') return handleCreateProduct(request);
+
+    if (path.startsWith('products/')) {
+      const id = decodeURIComponent(path.slice('products/'.length));
+      if (id) {
+        if (method === 'PUT' || method === 'PATCH') return handleUpdateProduct(request, id);
+        if (method === 'DELETE') return handleDeleteProduct(request, id);
+      }
+    }
 
     return err('Rota não encontrada: ' + path, 404);
   } catch (e) {

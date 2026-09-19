@@ -92,13 +92,11 @@ function Header() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <a href="#" className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FF6F00] to-[#E53935] flex items-center justify-center shadow-md">
-            <CarrinhoCheio className="w-10 h-10" />
-          </div>
-          <span className="text-2xl font-extrabold tracking-tight">
-            <span className="text-[#FF6F00]">Gold</span>
-            <span className="text-[#1565C0]">Link</span>
-          </span>
+          <img
+            src="/images/logo-mercado-gold-link.png"
+            alt="Mercado Gold Link"
+            className="h-12 w-auto rounded-xl shadow-md"
+          />
         </a>
 
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#0F172A]">
@@ -903,11 +901,12 @@ function App() {
 
       <section className="py-10 bg-[#0F172A] text-white/70 text-center text-sm">
         <div className="max-w-7xl mx-auto px-4">
-          <span className="text-2xl font-extrabold">
-            <span className="text-[#FF6F00]">Gold</span>
-            <span className="text-[#1565C0]">Link</span>
-          </span>
-          <p className="mt-2">© 2025 Gold Link — Afiliado Mercado Livre. Todos os preços sujeitos a alteração.</p>
+          <img
+            src="/images/logo-mercado-gold-link.png"
+            alt="Mercado Gold Link"
+            className="h-16 w-auto rounded-xl mx-auto"
+          />
+          <p className="mt-2">© 2025 Mercado Gold Link — Afiliado Mercado Livre. Todos os preços sujeitos a alteração.</p>
         </div>
       </section>
     </main>
