@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getStore } from '@netlify/blobs';
 import productsData from '../../../products.json';
+import { getProductsCollection } from '../../../lib/mongodb';
+
+export const dynamic = 'force-dynamic';
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'usergold';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '251831';
@@ -13,10 +16,23 @@ function err(message, status = 400) {
   return NextResponse.json({ error: message }, { status });
 }
 
-const PRODUCTS = Array.isArray(productsData) ? productsData : [];
-const LIST_ORDER = [...PRODUCTS].sort(
-  (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-);
+const SEED_PRODUCTS = Array.isArray(productsData) ? productsData : [];
+
+// Seed the database with the 80 products from products.json the first time the
+// collection is empty. After that the database is the single source of truth.
+async function ensureSeeded(collection) {
+  const count = await collection.countDocuments();
+  if (count > 0) return;
+  if (SEED_PRODUCTS.length === 0) return;
+  const docs = SEED_PRODUCTS.map((p) => ({
+    ...p,
+    id: p.id || (globalThis.crypto?.randomUUID?.() ?? String(Date.now())),
+  }));
+  await collection.insertMany(docs, { ordered: false }).catch(() => {});
+  await collection
+    .createIndex({ id: 1 }, { unique: true })
+    .catch(() => {});
+}
 
 function isAuthed(request) {
   const auth = request.headers.get('authorization') || '';
@@ -40,7 +56,62 @@ async function handleLogin(request) {
 }
 
 async function handleListProducts() {
-  return ok(LIST_ORDER);
+  try {
+    const collection = await getProductsCollection();
+    await ensureSeeded(collection);
+    const list = await collection
+      .find({}, { projection: { _id: 0 } })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return ok(list);
+  } catch (e) {
+    console.error('[v0] Erro ao listar produtos:', e.message);
+    return err('Não foi possível carregar as ofertas: ' + e.message, 500);
+  }
+}
+
+async function handleCreateProduct(request) {
+  if (!isAuthed(request)) return err('Não autorizado', 401);
+  try {
+    const body = await request.json();
+    const preco = Number(body.preco) || 0;
+    const precoAntigo = Number(body.precoAntigo) || 0;
+    let desconto = Number(body.desconto) || 0;
+    if (!desconto && precoAntigo > preco && precoAntigo > 0) {
+      desconto = Math.round(((precoAntigo - preco) / precoAntigo) * 100);
+    }
+    const nome = String(body.nome || '').trim();
+    const imagem = String(body.imagem || '').trim();
+    if (!nome) return err('Informe o nome do produto', 400);
+    if (!imagem) return err('Informe a URL da imagem', 400);
+    if (!preco) return err('Informe o preço do produto', 400);
+
+    const now = new Date().toISOString();
+    const product = {
+      id: globalThis.crypto?.randomUUID?.() ?? String(Date.now()),
+      nome,
+      imagem,
+      preco,
+      precoAntigo,
+      desconto,
+      categoria: String(body.categoria || 'Eletrônicos'),
+      rating: Number(body.rating) || 0,
+      reviews: Number(body.reviews) || 0,
+      freteGratis: Boolean(body.freteGratis),
+      link: String(body.link || '').trim(),
+      badge: body.badge || null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const collection = await getProductsCollection();
+    await ensureSeeded(collection);
+    await collection.insertOne({ ...product });
+    return ok(product, 201);
+  } catch (e) {
+    console.error('[v0] Erro ao criar produto:', e.message);
+    return err('Não foi possível salvar a oferta: ' + e.message, 500);
+  }
 }
 
 async function handleVerify(request) {
@@ -480,6 +551,7 @@ async function router(request, context) {
     if (path === 'banner' && (method === 'PUT' || method === 'POST')) return handleSaveBanner(request);
 
     if (path === 'products' && method === 'GET') return handleListProducts();
+    if (path === 'products' && method === 'POST') return handleCreateProduct(request);
 
     return err('Rota não encontrada: ' + path, 404);
   } catch (e) {

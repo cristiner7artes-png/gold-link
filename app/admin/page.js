@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Flame, LogOut, Plus, X, Save, LogIn, Package, Sparkles, Download, Copy, Check, ImagePlus } from 'lucide-react';
+import { Flame, LogOut, Plus, X, Save, LogIn, Package, Sparkles, Download, ImagePlus } from 'lucide-react';
 
 const STORAGE_KEY = 'goldlink_admin_token';
 const CATEGORIAS = ['Eletrônicos', 'Casa', 'Moda', 'Esportes', 'Beleza', 'Infantil'];
@@ -45,32 +45,6 @@ const emptyForm = {
   link: '',
   badge: '',
 };
-
-function productToJson(form) {
-  const preco = Number(form.preco) || 0;
-  const precoAntigo = Number(form.precoAntigo) || 0;
-  const now = new Date().toISOString();
-  let desconto = Number(form.desconto) || 0;
-  if (!desconto && precoAntigo > preco) {
-    desconto = Math.round(((precoAntigo - preco) / precoAntigo) * 100);
-  }
-  return {
-    id: crypto.randomUUID(),
-    nome: String(form.nome || '').trim(),
-    imagem: String(form.imagem || '').trim(),
-    preco,
-    precoAntigo,
-    desconto,
-    categoria: form.categoria || 'Eletrônicos',
-    rating: Number(form.rating) || 0,
-    reviews: Number(form.reviews) || 0,
-    freteGratis: Boolean(form.freteGratis),
-    link: String(form.link || '').trim(),
-    badge: form.badge || null,
-    createdAt: now,
-    updatedAt: now,
-  };
-}
 
 export default function AdminPage() {
   const [token, setToken] = useState(null);
@@ -273,7 +247,7 @@ function Dashboard({ token, onLogout }) {
               <Package className="inline w-4 h-4 mr-1 -mt-0.5" />
               {products.length} {products.length === 1 ? 'oferta cadastrada' : 'ofertas cadastradas'}
               <span className="ml-2 text-[11px] font-semibold text-slate-400">
-                (produtos são servidos de products.json no repositório)
+                (produtos salvos no banco de dados e exibidos no site)
               </span>
             </p>
           </div>
@@ -387,21 +361,23 @@ function Dashboard({ token, onLogout }) {
         <ProductModal
           initial={editing === 'new' ? emptyForm : editing}
           onClose={() => setEditing(null)}
-          products={products}
+          token={token}
+          onSaved={async () => {
+            setEditing(null);
+            await reload();
+          }}
         />
       )}
     </div>
   );
 }
 
-function ProductModal({ initial, onClose, products }) {
+function ProductModal({ initial, onClose, token, onSaved }) {
   const [form, setForm] = useState({ ...emptyForm, ...initial, badge: initial.badge || '' });
   const [scraping, setScraping] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [scrapeMsg, setScrapeMsg] = useState('');
-  const [savedJson, setSavedJson] = useState(null); // string do JSON gerado
-  const [copied, setCopied] = useState(false);
-  const isEdit = Boolean(initial.id);
 
   function up(k, v) { setForm((f) => ({ ...f, [k]: v })); }
 
@@ -449,73 +425,25 @@ function ProductModal({ initial, onClose, products }) {
     }
   }
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     setError('');
+    setSaving(true);
     try {
-      const entry = productToJson(form);
-      const filename = `products-${entry.id.slice(0, 8)}.json`;
-      setSavedJson({ filename, json: JSON.stringify(entry, null, 2) + '\n' });
+      const r = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(form),
+      });
+      await readApiResponse(r, 'Não foi possível salvar a oferta');
+      await onSaved();
     } catch (e2) {
       setError(e2.message);
+      setSaving(false);
     }
-  }
-
-  function copyJson() {
-    if (!savedJson) return;
-    navigator.clipboard
-      .writeText(savedJson.json)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch(() => {});
-  }
-
-  function downloadJson() {
-    if (!savedJson) return;
-    const blob = new Blob([savedJson.json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = savedJson.filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function mergePreview() {
-    if (!savedJson) return null;
-    try {
-      const entry = JSON.parse(savedJson.json);
-      const list = [entry, ...products.filter((p) => p.id !== entry.id)];
-      return JSON.stringify(list, null, 2) + '\n';
-    } catch {
-      return null;
-    }
-  }
-
-  function copyMerged() {
-    const merged = mergePreview();
-    if (!merged) return;
-    navigator.clipboard
-      .writeText(merged)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch(() => {});
-  }
-
-  function downloadMerged() {
-    const merged = mergePreview();
-    if (!merged) return;
-    const blob = new Blob([merged], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'products.json';
-    a.click();
-    URL.revokeObjectURL(url);
   }
 
   return (
@@ -621,73 +549,13 @@ function ProductModal({ initial, onClose, products }) {
           {error && <div className="text-sm text-[#E53935] bg-red-50 border border-red-100 px-3 py-2 rounded-lg">{error}</div>}
         </div>
 
-        {savedJson ? (
-          <div className="border-t border-slate-100 bg-[#F8FAFC] px-6 py-4 space-y-3">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Check className="w-4 h-4 text-[#22C55E]" />
-              Oferta pronta! Salve em products.json
-            </div>
-            <p className="text-xs text-slate-600">
-              Os produtos ficam no arquivo <code className="bg-white border border-slate-200 px-1 py-0.5 rounded text-[11px]">products.json</code> do
-              repositório. Copie ou baixe o JSON abaixo e cole no arquivo (na posição desejada da lista), depois faça commit — o
-              site atualiza no próximo deploy.
-            </p>
-            <pre className="max-h-40 overflow-auto bg-[#0F172A] text-[#7DD3FC] text-[11px] leading-relaxed rounded-lg p-3 font-mono">
-              {savedJson.json}
-            </pre>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={copyJson}
-                className="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-[#0F172A] font-bold text-sm px-4 py-2 rounded-lg shadow-sm transition"
-              >
-                <Copy className="w-4 h-4" />
-                {copied ? 'Copiado!' : 'Copiar JSON'}
-              </button>
-              <button
-                type="button"
-                onClick={downloadJson}
-                className="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-[#0F172A] font-bold text-sm px-4 py-2 rounded-lg shadow-sm transition"
-              >
-                <Download className="w-4 h-4" />
-                Baixar JSON
-              </button>
-              <button
-                type="button"
-                onClick={copyMerged}
-                className="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-[#0F172A] font-bold text-sm px-4 py-2 rounded-lg shadow-sm transition"
-              >
-                <Copy className="w-4 h-4" />
-                Copiar products.json completo
-              </button>
-              <button
-                type="button"
-              onClick={downloadMerged}
-                className="inline-flex items-center gap-2 bg-[#22C55E] hover:bg-[#16a34a] text-white font-bold text-sm px-4 py-2 rounded-lg shadow-sm transition"
-              >
-                <Download className="w-4 h-4" />
-                Baixar products.json completo
-              </button>
-            </div>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded-lg text-slate-600 hover:bg-white font-semibold text-sm"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-slate-600 hover:bg-white font-semibold text-sm">Cancelar</button>
-            <button type="submit" className="inline-flex items-center gap-2 bg-[#22C55E] hover:bg-[#16a34a] text-white font-bold px-5 py-2 rounded-lg shadow">
-              <Save className="w-4 h-4" />
-              Gerar JSON
-            </button>
-          </div>
-        )}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50">
+          <button type="button" onClick={onClose} disabled={saving} className="px-4 py-2 rounded-lg text-slate-600 hover:bg-white font-semibold text-sm disabled:opacity-60">Cancelar</button>
+          <button type="submit" disabled={saving} className="inline-flex items-center gap-2 bg-[#22C55E] hover:bg-[#16a34a] disabled:opacity-60 text-white font-bold px-5 py-2 rounded-lg shadow">
+            <Save className="w-4 h-4" />
+            {saving ? 'Salvando...' : 'Salvar oferta'}
+          </button>
+        </div>
       </form>
     </div>
   );
