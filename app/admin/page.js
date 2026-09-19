@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Flame, LogOut, Plus, X, Save, LogIn, Package, Sparkles, Download, ImagePlus } from 'lucide-react';
+import { Flame, LogOut, Plus, X, Save, LogIn, Package, Sparkles, Download, ImagePlus, Pencil, Trash2 } from 'lucide-react';
 
 const STORAGE_KEY = 'goldlink_admin_token';
 const CATEGORIAS = ['Eletrônicos', 'Casa', 'Moda', 'Esportes', 'Beleza', 'Infantil'];
@@ -211,6 +211,20 @@ function Dashboard({ token, onLogout }) {
     setEditing('new');
   }
 
+  async function handleDelete(product) {
+    if (typeof window !== 'undefined' && !window.confirm(`Excluir a oferta "${product.nome}"?`)) return;
+    try {
+      const r = await fetch(`/api/products/${encodeURIComponent(product.id)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await readApiResponse(r, 'Não foi possível excluir a oferta');
+      await reload();
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       <header className="bg-white border-b border-black/5 sticky top-0 z-40">
@@ -294,6 +308,7 @@ function Dashboard({ token, onLogout }) {
                     <th className="text-center px-4 py-3">Frete</th>
                     <th className="text-center px-4 py-3">Avaliação</th>
                     <th className="text-center px-4 py-3">Link</th>
+                    <th className="text-right px-4 py-3">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -339,6 +354,23 @@ function Dashboard({ token, onLogout }) {
                         >
                           Ver ↗
                         </a>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setEditing(p)}
+                            className="inline-flex items-center gap-1.5 bg-[#1565C0] hover:bg-[#0d47a1] text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow-sm transition"
+                          >
+                            <Pencil className="w-3.5 h-3.5" /> Editar
+                          </button>
+  <button
+  onClick={() => handleDelete(p)}
+  title="Excluir oferta"
+  className="inline-flex items-center gap-1.5 bg-[#E53935] hover:bg-[#c62828] text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow-sm transition"
+  >
+  <Trash2 className="w-3.5 h-3.5" /> Excluir oferta
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -425,13 +457,16 @@ function ProductModal({ initial, onClose, token, onSaved }) {
     }
   }
 
+  const isEditing = Boolean(initial && initial.id);
+
   async function submit(e) {
     e.preventDefault();
     setError('');
     setSaving(true);
     try {
-      const r = await fetch('/api/products', {
-        method: 'POST',
+      const url = isEditing ? `/api/products/${encodeURIComponent(initial.id)}` : '/api/products';
+      const r = await fetch(url, {
+        method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -453,7 +488,7 @@ function ProductModal({ initial, onClose, token, onSaved }) {
         className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8"
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-bold">Colocar oferta</h2>
+          <h2 className="text-lg font-bold">{isEditing ? 'Editar oferta' : 'Colocar oferta'}</h2>
           <button type="button" onClick={onClose} className="p-1 rounded hover:bg-slate-100">
             <X className="w-5 h-5" />
           </button>
@@ -553,7 +588,7 @@ function ProductModal({ initial, onClose, token, onSaved }) {
           <button type="button" onClick={onClose} disabled={saving} className="px-4 py-2 rounded-lg text-slate-600 hover:bg-white font-semibold text-sm disabled:opacity-60">Cancelar</button>
           <button type="submit" disabled={saving} className="inline-flex items-center gap-2 bg-[#22C55E] hover:bg-[#16a34a] disabled:opacity-60 text-white font-bold px-5 py-2 rounded-lg shadow">
             <Save className="w-4 h-4" />
-            {saving ? 'Salvando...' : 'Salvar oferta'}
+            {saving ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Salvar oferta'}
           </button>
         </div>
       </form>

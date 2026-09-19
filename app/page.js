@@ -92,13 +92,20 @@ function Header() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <a href="#" className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FF6F00] to-[#E53935] flex items-center justify-center shadow-md">
-            <CarrinhoCheio className="w-10 h-10" />
-          </div>
-          <span className="text-2xl font-extrabold tracking-tight">
-            <span className="text-[#FF6F00]">Gold</span>
-            <span className="text-[#1565C0]">Link</span>
-          </span>
+            <img
+              src="/images/logo-mercado-gold-link.png"
+              alt="Mercado Gold Link"
+              className="h-12 sm:h-14 w-auto rounded-lg"
+            />
+            <span className="flex flex-col leading-none">
+              <span className="text-xl sm:text-2xl font-black tracking-tight text-[#1565C0]">
+                MERCADO
+              </span>
+              <span className="text-2xl sm:text-3xl font-black tracking-tight">
+                <span className="text-[#1565C0]">Gold</span>{' '}
+                <span className="text-[#FF6F00]">Link</span>
+              </span>
+            </span>
         </a>
 
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#0F172A]">
@@ -207,12 +214,12 @@ function Hero({ products, banner }) {
               className="group relative inline-flex items-center gap-2 font-extrabold px-8 py-4 rounded-xl shadow-2xl transition-all hover:scale-[1.05] overflow-hidden"
               style={{
                 background:
-                  'linear-gradient(90deg, #FF1493 0%, #FF3DA1 45%, #FFEA00 100%)',
-                color: '#5B0026',
+                  'linear-gradient(90deg, #FFD500 0%, #FFC400 45%, #1D4ED8 100%)',
+                color: '#0A2A6B',
               }}
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-fuchsia-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <span className="relative flex items-center gap-2">
+              <span className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 group-hover:from-yellow-400 group-hover:via-yellow-500 group-hover:to-yellow-600 transition-colors duration-300" />
+              <span className="relative flex items-center gap-2 text-base sm:text-lg font-extrabold drop-shadow-sm">
                 <Zap className="w-5 h-5" />
                 Ver Ofertas Agora
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
@@ -903,11 +910,12 @@ function App() {
 
       <section className="py-10 bg-[#0F172A] text-white/70 text-center text-sm">
         <div className="max-w-7xl mx-auto px-4">
-          <span className="text-2xl font-extrabold">
-            <span className="text-[#FF6F00]">Gold</span>
-            <span className="text-[#1565C0]">Link</span>
-          </span>
-          <p className="mt-2">© 2025 Gold Link — Afiliado Mercado Livre. Todos os preços sujeitos a alteração.</p>
+          <img
+            src="/images/logo-mercado-gold-link.png"
+            alt="Mercado Gold Link"
+            className="h-16 w-auto rounded-xl mx-auto"
+          />
+          <p className="mt-2">© 2025 Mercado Gold Link — Afiliado Mercado Livre. Todos os preços sujeitos a alteração.</p>
         </div>
       </section>
     </main>
