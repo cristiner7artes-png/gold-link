@@ -298,6 +298,36 @@ async function fetchMercadoLivreDetails(itemId) {
   return { item, reviewSummary };
 }
 
+// The catalog reviews widget endpoint is NOT behind the aggressive anti-bot
+// that guards the product page, so it is reachable from server IPs. When the
+// product page is blocked, this is often the only place we can still read the
+// aggregate rating / review count.
+async function fetchMercadoLivreReviewWidget(itemId) {
+  if (!itemId) return { rating: 0, reviews: 0 };
+  try {
+    const url = `https://www.mercadolivre.com.br/noindex/catalog/reviews/${encodeURIComponent(
+      itemId
+    )}?noIndex=true`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok) return { rating: 0, reviews: 0 };
+    const html = await response.text();
+    if (html.includes('account-verification') || html.includes('suspicious-traffic-frontend')) {
+      return { rating: 0, reviews: 0 };
+    }
+    return extractReviewsFromHtml(html);
+  } catch {
+    return { rating: 0, reviews: 0 };
+  }
+}
+
 function extractReviewsFromHtml(html) {
   let rating = 0;
   let reviews = 0;
@@ -512,6 +542,16 @@ async function handleScrapeProduct(request) {
     const apiReviews = Number(reviewSummary?.paging?.total ?? reviewSummary?.reviews_count);
     if (Number.isFinite(apiRating) && apiRating > 0) rating = apiRating;
     if (Number.isFinite(apiReviews) && apiReviews > 0) reviews = Math.round(apiReviews);
+
+    // Last resort: the product page is often anti-bot blocked, but the catalog
+    // reviews widget endpoint stays reachable. Query it when we still have no rating.
+    if (!rating && itemId) {
+      const widget = await fetchMercadoLivreReviewWidget(itemId);
+      if (widget.rating > 0) {
+        rating = widget.rating;
+        if (widget.reviews > 0) reviews = widget.reviews;
+      }
+    }
 
     const badge = extractBadgeFromHtml(html);
 
