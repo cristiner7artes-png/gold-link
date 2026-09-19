@@ -218,7 +218,7 @@ function Hero({ products, banner }) {
                 color: '#0A2A6B',
               }}
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <span className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 group-hover:from-yellow-400 group-hover:via-yellow-500 group-hover:to-yellow-600 transition-colors duration-300" />
               <span className="relative flex items-center gap-2 text-base sm:text-lg font-extrabold drop-shadow-sm">
                 <Zap className="w-5 h-5" />
                 Ver Ofertas Agora
