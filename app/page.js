@@ -91,14 +91,17 @@ function Header() {
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <a href="#" className="flex items-center">
-            <span className="flex flex-col items-center leading-none">
-              <img
-                src="/images/logo-mercado-wordmark.png"
-                alt="Mercado"
-                className="h-14 sm:h-16 w-auto"
-              />
-              <span className="text-2xl sm:text-3xl font-black tracking-tight -mt-2">
+        <a href="#" className="flex items-center gap-3">
+            <img
+              src="/images/logo-mercado-gold-link.png"
+              alt="Mercado Gold Link"
+              className="h-12 sm:h-14 w-auto rounded-lg"
+            />
+            <span className="flex flex-col leading-none">
+              <span className="text-xl sm:text-2xl font-black tracking-tight text-[#1565C0]">
+                MERCADO
+              </span>
+              <span className="text-2xl sm:text-3xl font-black tracking-tight">
                 <span className="text-[#1565C0]">Gold</span>{' '}
                 <span className="text-[#FF6F00]">Link</span>
               </span>
