@@ -363,12 +363,12 @@ function Dashboard({ token, onLogout }) {
                           >
                             <Pencil className="w-3.5 h-3.5" /> Editar
                           </button>
-                          <button
-                            onClick={() => handleDelete(p)}
-                            title="Excluir oferta"
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-[#E53935] hover:bg-red-50 transition"
-                          >
-                            <Trash2 className="w-4 h-4" />
+  <button
+  onClick={() => handleDelete(p)}
+  title="Excluir oferta"
+  className="inline-flex items-center gap-1.5 bg-[#E53935] hover:bg-[#c62828] text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow-sm transition"
+  >
+  <Trash2 className="w-3.5 h-3.5" /> Excluir oferta
                           </button>
                         </div>
                       </td>

@@ -214,14 +214,14 @@ function Hero({ products, banner }) {
               className="group relative inline-flex items-center gap-2 font-extrabold px-8 py-4 rounded-xl shadow-2xl transition-all hover:scale-[1.05] overflow-hidden"
               style={{
                 background:
-                  'linear-gradient(90deg, #FF1493 0%, #FF3DA1 45%, #FFEA00 100%)',
-                color: '#5B0026',
+                  'linear-gradient(90deg, #FF6A00 0%, #FF8C00 45%, #FFC400 100%)',
+                color: '#3A1500',
               }}
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-fuchsia-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <span className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-orange-500 to-orange-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <span className="relative flex items-center gap-2 text-base sm:text-lg font-extrabold drop-shadow-sm">
                 <Zap className="w-5 h-5" />
-                Ofertas Imperdíveis
+                Ver Ofertas Agora
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </span>
             </a>
