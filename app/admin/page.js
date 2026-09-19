@@ -440,15 +440,17 @@ function ProductModal({ initial, onClose, token, onSaved }) {
         rating: d.found?.rating ? d.rating : f.rating,
         reviews: d.found?.reviews ? d.reviews : f.reviews,
         freteGratis: d.found?.freteGratis ? d.freteGratis : f.freteGratis,
+        badge: d.found?.badge ? d.badge : f.badge,
       }));
       const missing = [];
       if (!d.found?.rating) missing.push('nota da avaliação');
       if (!d.found?.reviews) missing.push('número de avaliações');
       if (!d.found?.freteGratis) missing.push('frete');
+      if (!d.found?.badge) missing.push('selo/badge');
       setScrapeMsg(
         missing.length
           ? `Dados carregados. Não foi possível confirmar ${missing.join(' e ')}; revise esses campos antes de salvar.`
-          : 'Dados carregados, incluindo avaliações e frete. Revise e salve.'
+          : 'Dados carregados, incluindo avaliações, frete e selo. Revise e salve.'
       );
     } catch (e) {
       setError(e.message);

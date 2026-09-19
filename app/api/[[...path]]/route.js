@@ -351,6 +351,30 @@ function extractReviewsFromHtml(html) {
   return { rating: Math.min(5, Math.max(0, rating)), reviews: Math.max(0, reviews) };
 }
 
+// Extract the promotional badge shown on the Mercado Livre product/card.
+// Returns one of the allowed admin badge labels or '' when none is found.
+function extractBadgeFromHtml(html) {
+  if (!html) return '';
+  // "Mais vendido" — pill/highlight on best-seller items
+  if (
+    /mais\s+vendido/i.test(html) ||
+    /"best_seller"/i.test(html) ||
+    /"(?:label|text)"\s*:\s*"[^"]*mais\s+vendido[^"]*"/i.test(html)
+  ) {
+    return 'MAIS VENDIDO';
+  }
+  // Lightning / daily deal
+  if (
+    /oferta\s+rel[aâ]mpago/i.test(html) ||
+    /lightning[_-]?deal/i.test(html) ||
+    /deal_of_the_day/i.test(html) ||
+    /oferta\s+do\s+dia/i.test(html)
+  ) {
+    return 'OFERTA RELÂMPAGO';
+  }
+  return '';
+}
+
 async function handleScrapeProduct(request) {
   try {
     const body = await request.json();
@@ -489,6 +513,8 @@ async function handleScrapeProduct(request) {
     if (Number.isFinite(apiRating) && apiRating > 0) rating = apiRating;
     if (Number.isFinite(apiReviews) && apiReviews > 0) reviews = Math.round(apiReviews);
 
+    const badge = extractBadgeFromHtml(html);
+
     const htmlHasShipping =
       /"free_shipping"\s*:\s*(?:true|false)|"freeShipping"\s*:\s*(?:true|false)|Frete\s+gr[aá]tis/i.test(html);
     const apiHasShipping = typeof item?.shipping?.free_shipping === 'boolean';
@@ -529,10 +555,12 @@ async function handleScrapeProduct(request) {
       rating: Math.min(5, Math.max(0, rating)),
       reviews: Math.max(0, reviews),
       freteGratis,
+      badge,
       found: {
         rating: rating > 0,
         reviews: reviews > 0,
         freteGratis: apiHasShipping || htmlHasShipping,
+        badge: !!badge,
       },
     });
   } catch (e) {
