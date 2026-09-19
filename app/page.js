@@ -97,14 +97,15 @@ function Header() {
             alt="Mercado Gold Link"
             className="h-12 w-auto rounded-xl shadow-md"
           />
-          <span className="flex flex-col leading-none">
-            <span className="text-xl sm:text-2xl font-black tracking-tight text-[#1565C0]">
-              Gold Link
+            <span className="flex flex-col leading-none">
+              <span className="text-xl sm:text-2xl font-black uppercase tracking-tight text-[#E53935]">
+                Mercado
+              </span>
+              <span className="text-base sm:text-lg font-black tracking-tight">
+                <span className="text-[#1565C0]">Gold</span>{' '}
+                <span className="text-[#FF6F00]">Link</span>
+              </span>
             </span>
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[#E53935]">
-              Mercado
-            </span>
-          </span>
         </a>
 
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#0F172A]">
@@ -218,10 +219,10 @@ function Hero({ products, banner }) {
               }}
             >
               <span className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-fuchsia-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <span className="relative flex items-center gap-2 text-xl sm:text-2xl font-black uppercase tracking-wide drop-shadow-sm">
-                <Zap className="w-6 h-6" />
+              <span className="relative flex items-center gap-2 text-base sm:text-lg font-extrabold drop-shadow-sm">
+                <Zap className="w-5 h-5" />
                 Ofertas Imperdíveis
-                <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-1" />
+                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </span>
             </a>
             <a
