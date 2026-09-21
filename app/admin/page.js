@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Flame, LogOut, Plus, X, Save, LogIn, Package, Sparkles, Download, ImagePlus, Pencil, Trash2 } from 'lucide-react';
+  import { Flame, LogOut, Plus, X, Save, LogIn, Package, Sparkles, Download, ImagePlus, Pencil, Trash2, RefreshCw, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 
 const STORAGE_KEY = 'goldlink_admin_token';
 const CATEGORIAS = ['Eletrônicos', 'Casa', 'Moda', 'Esportes', 'Beleza', 'Infantil'];
@@ -178,6 +178,9 @@ function Dashboard({ token, onLogout }) {
   const [editing, setEditing] = useState(null); // null | 'new' | product
   const [bannerOpen, setBannerOpen] = useState(false);
   const [banner, setBanner] = useState(null);
+  const [checking, setChecking] = useState(false);
+  const [checkResult, setCheckResult] = useState(null); // { resumo, resultados, verificadoEm }
+  const [checkError, setCheckError] = useState('');
 
   useEffect(() => {
     fetch('/api/banner')
@@ -210,6 +213,28 @@ function Dashboard({ token, onLogout }) {
   function newOffer() {
     setEditing('new');
   }
+
+  async function handleCheckOffers() {
+    setChecking(true);
+    setCheckError('');
+    setCheckResult(null);
+    try {
+      const r = await fetch('/api/admin/check-offers', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const d = await readApiResponse(r, 'Não foi possível verificar as ofertas');
+      setCheckResult(d);
+    } catch (e) {
+      setCheckError(e.message);
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  const statusById = checkResult
+    ? Object.fromEntries(checkResult.resultados.map((r) => [r.id, r]))
+    : {};
 
   async function handleDelete(product) {
     if (typeof window !== 'undefined' && !window.confirm(`Excluir a oferta "${product.nome}"?`)) return;
@@ -284,8 +309,86 @@ function Dashboard({ token, onLogout }) {
                 </span>
               )}
             </button>
+            <button
+              onClick={handleCheckOffers}
+              disabled={checking}
+              className="inline-flex items-center justify-center gap-2 bg-[#1565C0] hover:bg-[#0d47a1] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition"
+            >
+              <RefreshCw className={`w-5 h-5 ${checking ? 'animate-spin' : ''}`} />
+              {checking ? 'Verificando ofertas...' : 'Verificar ofertas'}
+            </button>
           </div>
         </div>
+
+        {(checkResult || checkError) && (
+          <div className="mb-6 bg-white rounded-2xl border border-black/5 shadow-sm p-4 sm:p-5">
+            {checkError ? (
+              <div className="text-sm font-semibold text-[#E53935]">{checkError}</div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+                  <div className="flex items-center gap-2 text-sm font-bold text-[#0F172A]">
+                    <RefreshCw className="w-4 h-4 text-[#1565C0]" />
+                    Resultado da verificação
+                  </div>
+                  <button
+                    onClick={() => setCheckResult(null)}
+                    className="text-xs font-semibold text-slate-400 hover:text-slate-600"
+                  >
+                    Fechar
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 font-bold text-xs px-3 py-1.5 rounded-lg">
+                    <CheckCircle2 className="w-4 h-4" /> {checkResult.resumo.online} online
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 bg-red-50 text-[#E53935] font-bold text-xs px-3 py-1.5 rounded-lg">
+                    <XCircle className="w-4 h-4" /> {checkResult.resumo.encerrada} encerradas
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 font-bold text-xs px-3 py-1.5 rounded-lg">
+                    <AlertTriangle className="w-4 h-4" /> {checkResult.resumo.indeterminado} não confirmadas
+                  </span>
+                </div>
+                {(() => {
+                  const problemas = checkResult.resultados.filter((r) => r.status !== 'online');
+                  if (problemas.length === 0) {
+                    return (
+                      <p className="text-sm text-emerald-700 font-semibold">
+                        Todas as {checkResult.resumo.total} ofertas estão online.
+                      </p>
+                    );
+                  }
+                  return (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        Ofertas que precisam de atenção
+                      </p>
+                      <ul className="divide-y divide-slate-100 border border-slate-100 rounded-lg overflow-hidden">
+                        {problemas.map((r) => (
+                          <li key={r.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                            <div className="min-w-0">
+                              <div className="font-semibold text-[#0F172A] truncate">{r.nome}</div>
+                              <div className="text-xs text-slate-500">{r.motivo}</div>
+                            </div>
+                            <span
+                              className={`flex-shrink-0 text-[10px] font-extrabold uppercase px-2 py-1 rounded ${
+                                r.status === 'encerrada'
+                                  ? 'bg-red-50 text-[#E53935]'
+                                  : 'bg-amber-50 text-amber-700'
+                              }`}
+                            >
+                              {r.status === 'encerrada' ? 'Encerrada' : 'Não confirmada'}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
+              </>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="bg-white rounded-2xl p-12 text-center text-slate-500">Carregando...</div>
