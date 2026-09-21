@@ -553,7 +553,12 @@ async function handleScrapeProduct(request) {
       }
     }
 
-    const badge = extractBadgeFromHtml(html);
+    let badge = extractBadgeFromHtml(html);
+    // Toda oferta imperdível (com desconto) recebe o selo "OFERTA RELÂMPAGO",
+    // exceto quando já é "MAIS VENDIDO", que tem prioridade.
+    if (badge !== 'MAIS VENDIDO' && desconto > 0) {
+      badge = 'OFERTA RELÂMPAGO';
+    }
 
     const htmlHasShipping =
       /"free_shipping"\s*:\s*(?:true|false)|"freeShipping"\s*:\s*(?:true|false)|Frete\s+gr[aá]tis/i.test(html);
