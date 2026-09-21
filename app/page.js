@@ -19,8 +19,6 @@ import {
   Baby,
   Clock,
   Tag,
-  Mail,
-  Copy,
 } from 'lucide-react';
 
 /* ------------------ DATA ------------------ */
@@ -781,91 +779,6 @@ function Categorias({ products, loading }) {
   );
 }
 
-/* ------------------ SEJA PARCEIRO ------------------ */
-function SejaParceiro() {
-  const EMAIL = 'rhuansampaio11@gmail.com';
-  const [copied, setCopied] = useState(false);
-
-  async function copyEmail() {
-    try {
-      await navigator.clipboard.writeText(EMAIL);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
-  }
-
-  return (
-    <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.6 }}
-          className="relative rounded-3xl overflow-hidden shadow-2xl"
-          style={{
-            background:
-              'linear-gradient(120deg, #E53935 0%, #FF6F00 55%, #1565C0 100%)',
-          }}
-        >
-          {/* decorative */}
-          <div className="absolute -top-24 -right-24 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute top-6 right-6 opacity-20 hidden md:block">
-            <Flame className="w-40 h-40 text-white" strokeWidth={1} />
-          </div>
-
-          <div className="relative px-6 py-14 sm:px-12 sm:py-16 md:py-20 grid md:grid-cols-[1fr,auto] gap-8 items-center">
-            <div className="text-white">
-              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md border border-white/25 text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-4">
-                <Zap className="w-3.5 h-3.5 text-yellow-300" />
-                Seja Parceiro Gold Link
-              </div>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight">
-                Divulgue seu link de afiliado com a gente
-              </h2>
-              <p className="mt-4 text-white/90 text-lg max-w-2xl">
-                Tem um link de afiliado e quer alcançar mais compradores? Faça
-                sua proposta e vamos crescer juntos.
-              </p>
-
-              <div className="mt-6 bg-white/15 backdrop-blur-md border border-white/25 rounded-2xl p-4 sm:p-5 max-w-xl">
-                <div className="text-xs font-bold uppercase tracking-wider text-white/80 mb-1">
-                  Faça sua proposta enviando nesse email
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <a
-                    href={`mailto:${EMAIL}?subject=Proposta%20de%20Parceria%20Gold%20Link`}
-                    className="text-xl sm:text-2xl font-extrabold text-white hover:text-yellow-300 transition break-all"
-                  >
-                    {EMAIL}
-                  </a>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <a
-                    href={`mailto:${EMAIL}?subject=Proposta%20de%20Parceria%20Gold%20Link&body=Ol%C3%A1%2C%20tenho%20interesse%20em%20divulgar%20meu%20link%20de%20afiliado.%20Segue%20minha%20proposta%3A`}
-                    className="inline-flex items-center gap-2 bg-white text-[#E53935] font-bold px-5 py-3 rounded-xl shadow-lg hover:shadow-xl transition hover:scale-[1.03]"
-                  >
-                    <Mail className="w-4 h-4" />
-                    Enviar Proposta
-                  </a>
-                  <button
-                    onClick={copyEmail}
-                    className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-semibold px-5 py-3 rounded-xl backdrop-blur-sm transition"
-                  >
-                    <Copy className="w-4 h-4" />
-                    {copied ? 'Copiado!' : 'Copiar email'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
 /* ------------------ PAGE ------------------ */
 function App() {
   const [products, setProducts] = useState([]);
@@ -906,7 +819,6 @@ function App() {
       <CountdownBanner />
       <Promocoes products={products} loading={loading} />
       <Categorias products={products} loading={loading} />
-      <SejaParceiro />
 
       <section className="py-10 bg-[#0F172A] text-white/70 text-center text-sm">
         <div className="max-w-7xl mx-auto px-4">

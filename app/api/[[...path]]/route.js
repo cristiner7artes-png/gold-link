@@ -179,6 +179,143 @@ async function handleVerify(request) {
   return ok({ valid: isAuthed(request) });
 }
 
+/* ---------- Verificação de ofertas (online / encerrada) ---------- */
+
+const OFFLINE_SIGNALS = [
+  'publicação pausada',
+  'publicacao pausada',
+  'esta publicação foi encerrada',
+  'esta publicacao foi encerrada',
+  'publicação encerrada',
+  'publicacao encerrada',
+  'não está mais disponível',
+  'nao esta mais disponivel',
+  'produto não disponível',
+  'produto nao disponivel',
+  'esta publicação não está disponível',
+  'esta publicacao nao esta disponivel',
+  'ops! não encontramos',
+  'ops! nao encontramos',
+  'a página que você procura',
+  'a pagina que voce procura',
+  'página não encontrada',
+  'pagina nao encontrada',
+];
+
+const ANTIBOT_SIGNALS = [
+  'account-verification',
+  'nocaptcha',
+  'para continuar, confirme que você não é um robô',
+  'confirme que voce nao e um robo',
+];
+
+// Verifica um único link de afiliado. Retorna online | encerrada | indeterminado.
+async function checkOfferOnline(rawLink) {
+  const link = String(rawLink || '').trim();
+  if (!link) return { status: 'indeterminado', motivo: 'Sem link cadastrado' };
+
+  let url;
+  try {
+    url = new URL(link);
+  } catch {
+    return { status: 'indeterminado', motivo: 'Link inválido' };
+  }
+  if (url.protocol !== 'https:') {
+    return { status: 'indeterminado', motivo: 'Link não é HTTPS' };
+  }
+
+  try {
+    let currentUrl = url;
+    let lastStatus = 0;
+    // Segue os redirecionamentos do link de afiliado (meli.la → produto).
+    for (let redirect = 0; redirect <= 6; redirect += 1) {
+      const response = await fetch(currentUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36',
+          'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        },
+        redirect: 'manual',
+        signal: AbortSignal.timeout(12000),
+      });
+      lastStatus = response.status;
+
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location');
+        if (!location) break;
+        try {
+          currentUrl = new URL(location, currentUrl);
+        } catch {
+          break;
+        }
+        continue;
+      }
+
+      // 404/410 → oferta encerrada de forma explícita
+      if (response.status === 404 || response.status === 410) {
+        return { status: 'encerrada', motivo: `Página retornou ${response.status}` };
+      }
+      if (response.status >= 400) {
+        return { status: 'indeterminado', motivo: `Página retornou ${response.status}` };
+      }
+
+      const html = (await response.text()).toLowerCase();
+
+      if (ANTIBOT_SIGNALS.some((s) => html.includes(s))) {
+        return { status: 'indeterminado', motivo: 'Mercado Livre pediu verificação anti-robô' };
+      }
+      if (OFFLINE_SIGNALS.some((s) => html.includes(s))) {
+        return { status: 'encerrada', motivo: 'A página indica que a oferta foi encerrada' };
+      }
+      return { status: 'online', motivo: 'Oferta disponível', finalUrl: currentUrl.toString() };
+    }
+    return { status: 'indeterminado', motivo: `Muitos redirecionamentos (${lastStatus})` };
+  } catch (e) {
+    if (e.name === 'TimeoutError' || e.name === 'AbortError') {
+      return { status: 'indeterminado', motivo: 'Tempo limite ao acessar o link' };
+    }
+    return { status: 'indeterminado', motivo: 'Falha ao acessar o link' };
+  }
+}
+
+async function handleCheckOffers(request) {
+  if (!isAuthed(request)) return err('Não autorizado', 401);
+  try {
+    const collection = await getProductsCollection();
+    await ensureSeeded(collection);
+    const products = await collection
+      .find({}, { projection: { _id: 0, id: 1, nome: 1, link: 1 } })
+      .toArray();
+
+    // Verifica em lotes para não abrir conexões demais de uma vez.
+    const results = [];
+    const BATCH = 6;
+    for (let i = 0; i < products.length; i += BATCH) {
+      const slice = products.slice(i, i + BATCH);
+      const checked = await Promise.all(
+        slice.map(async (p) => {
+          const r = await checkOfferOnline(p.link);
+          return { id: p.id, nome: p.nome, link: p.link, ...r };
+        })
+      );
+      results.push(...checked);
+    }
+
+    const resumo = {
+      total: results.length,
+      online: results.filter((r) => r.status === 'online').length,
+      encerrada: results.filter((r) => r.status === 'encerrada').length,
+      indeterminado: results.filter((r) => r.status === 'indeterminado').length,
+    };
+
+    return ok({ verificadoEm: new Date().toISOString(), resumo, resultados: results });
+  } catch (e) {
+    console.error('[v0] Erro ao verificar ofertas:', e.message);
+    return err('Não foi possível verificar as ofertas: ' + e.message, 500);
+  }
+}
+
 /* ---------- Mercado Livre scraper (preenchimento automático) ---------- */
 
 const ALLOWED_PRODUCT_HOSTS = [
@@ -680,6 +817,7 @@ async function router(request, context) {
     if (path === 'admin/login' && method === 'POST') return handleLogin(request);
     if (path === 'admin/verify' && method === 'GET') return handleVerify(request);
     if (path === 'admin/scrape' && method === 'POST') return handleScrapeProduct(request);
+    if (path === 'admin/check-offers' && method === 'POST') return handleCheckOffers(request);
 
     if (path === 'banner' && method === 'GET') return handleGetBanner();
     if (path === 'banner' && (method === 'PUT' || method === 'POST')) return handleSaveBanner(request);
