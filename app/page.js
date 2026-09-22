@@ -17,6 +17,9 @@ import {
   Dumbbell,
   Sparkles,
   Baby,
+  Palette,
+  HeartPulse,
+  Apple,
   Clock,
   Tag,
 } from 'lucide-react';
@@ -29,6 +32,9 @@ const CATEGORIAS = [
   { nome: 'Esportes', icon: Dumbbell, cor: '#EC4899' },
   { nome: 'Beleza', icon: Sparkles, cor: '#1565C0' },
   { nome: 'Infantil', icon: Baby, cor: '#F59E0B' },
+  { nome: 'Artesanatos', icon: Palette, cor: '#EC4899' },
+  { nome: 'Farmácia', icon: HeartPulse, cor: '#1565C0' },
+  { nome: 'Alimentos', icon: Apple, cor: '#F59E0B' },
 ];
 
 /* ------------------ UTILITIES ------------------ */

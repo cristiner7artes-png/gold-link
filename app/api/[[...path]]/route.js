@@ -720,6 +720,9 @@ async function handleScrapeProduct(request) {
       { keys: ['bicicleta', 'esporte', 'fitness', 'bike', 'academia', 'suplemento', 'whey'], v: 'Esportes' },
       { keys: ['perfume', 'beleza', 'maquiagem', 'shampoo', 'creme', 'batom', 'cosmético'], v: 'Beleza' },
       { keys: ['bebê', 'bebe', 'infantil', 'brinquedo', 'lego', 'boneca'], v: 'Infantil' },
+      { keys: ['artesanal', 'artesanato', 'artesanatos', 'feito à mão', 'feito a mao', 'crochê', 'croche', 'tricô', 'trico', 'macramê', 'macrame', 'papelaria', 'scrapbook', 'costura', 'bordado'], v: 'Artesanatos' },
+      { keys: ['farmácia', 'farmacia', 'remédio', 'remedio', 'medicamento', 'vitamina', 'suplemento', 'saúde', 'saude', 'termômetro', 'termometro', 'máscara cirúrgica', 'curativo', 'fralda geriátrica'], v: 'Farmácia' },
+      { keys: ['alimento', 'alimentos', 'comida', 'bebida', 'café', 'cafe', 'chocolate', 'biscoito', 'snack', 'cesta básica', 'cesta basica', 'azeite', 'grãos', 'graos', 'temperos'], v: 'Alimentos' },
     ];
     const low = (nome + ' ' + finalUrl).toLowerCase();
     for (const c of catMap) {

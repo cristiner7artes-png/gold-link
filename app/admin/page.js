@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
   import { Flame, LogOut, Plus, X, Save, LogIn, Package, Sparkles, Download, ImagePlus, Pencil, Trash2, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Bot, Play, Pause, Settings, Activity, TrendingUp, Clock, MousePointerClick, Zap, ListChecks } from 'lucide-react';
 
 const STORAGE_KEY = 'goldlink_admin_token';
-const CATEGORIAS = ['Eletrônicos', 'Celulares', 'Informática', 'Casa', 'Moda', 'Esportes', 'Infantil', 'Beleza', 'Automotivo', 'Games', 'Eletrodomésticos', 'Acessórios', 'Outros'];
+const CATEGORIAS = ['Eletrônicos', 'Celulares', 'Informática', 'Casa', 'Moda', 'Esportes', 'Infantil', 'Beleza', 'Automotivo', 'Games', 'Eletrodomésticos', 'Acessórios', 'Artesanatos', 'Farmácia', 'Alimentos', 'Outros'];
 const BADGES = ['', 'MAIS VENDIDO', 'OFERTA RELÂMPAGO', 'FRETE GRÁTIS', 'NOVO'];
 
 async function readApiResponse(response, fallbackMessage = 'Não foi possível concluir a operação') {
