@@ -1125,8 +1125,8 @@ function RobotPanel({ token, onProductsChanged }) {
                     value={form.intervaloMin}
                     onChange={(e) => setForm({ ...form, intervaloMin: e.target.value })} />
                 </Field>
-                <Field label="Máx. por categoria">
-                  <input type="number" min={1} max={100} className={inputCls}
+                <Field label="Ofertas por categoria (até 50)">
+                  <input type="number" min={1} max={50} className={inputCls}
                     value={form.maxPorCategoria}
                     onChange={(e) => setForm({ ...form, maxPorCategoria: e.target.value })} />
                 </Field>
