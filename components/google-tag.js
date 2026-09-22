@@ -1,0 +1,24 @@
+'use client';
+
+import Script from 'next/script';
+
+const GOOGLE_TAG_ID = 'AW-18466543528';
+
+export default function GoogleTag() {
+  return (
+    <>
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_TAG_ID}`}
+        strategy="afterInteractive"
+      />
+      <Script id="google-tag" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${GOOGLE_TAG_ID}');
+        `}
+      </Script>
+    </>
+  );
+}
