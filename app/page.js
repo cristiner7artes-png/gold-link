@@ -548,9 +548,9 @@ function ProductCard({ p, index }) {
                 className="group relative inline-flex items-center gap-2.5 rounded-full pl-2 pr-3.5 py-1.5 overflow-hidden"
                 style={{
                   background:
-                    'linear-gradient(180deg, #FDE68A 0%, #FACC15 42%, #EAB308 78%, #CA8A04 100%)',
+                    'linear-gradient(180deg, #FFD92E 0%, #F8D000 45%, #F0B000 100%)',
                   boxShadow:
-                    '0 6px 16px -4px rgba(202,138,4,0.65), 0 2px 4px -1px rgba(120,53,15,0.35), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -2px 3px rgba(120,53,15,0.28)',
+                    '0 6px 16px -4px rgba(240,176,0,0.65), 0 2px 4px -1px rgba(120,53,15,0.35), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -2px 3px rgba(240,176,0,0.35)',
                   border: '1px solid rgba(255,255,255,0.55)',
                 }}
               >
@@ -579,12 +579,20 @@ function ProductCard({ p, index }) {
 
                 <span className="relative flex flex-col leading-none">
                   <span
-                    className="text-[13px] font-black tracking-tight text-[#1A1206] whitespace-nowrap"
+                    className="text-[13px] font-black tracking-tight text-[#181820] whitespace-nowrap"
                     style={{ textShadow: '0 1px 0 rgba(255,255,255,0.55)' }}
                   >
                     ECONOMIZE {formatBRL(p.precoAntigo - p.preco)}
                   </span>
-                  <span className="mt-1 self-start rounded-full bg-[#111111] px-2 py-[3px] text-[9px] font-bold uppercase tracking-wide text-[#FACC15] whitespace-nowrap">
+                  <span
+                    className="mt-1 self-start rounded-full px-2 py-[3px] text-[9px] font-bold uppercase tracking-wide text-[#181820] whitespace-nowrap"
+                    style={{
+                      background:
+                        'linear-gradient(180deg, #FFD92E 0%, #F8D000 50%, #F0B000 100%)',
+                      boxShadow:
+                        'inset 0 1px 0 rgba(255,255,255,0.75), 0 1px 2px rgba(240,176,0,0.45)',
+                    }}
+                  >
                     em seu bolso
                   </span>
                 </span>
