@@ -22,6 +22,7 @@ import {
   Apple,
   Clock,
   Tag,
+  Wallet,
 } from 'lucide-react';
 
 /* ------------------ DATA ------------------ */
@@ -539,23 +540,55 @@ function ProductCard({ p, index }) {
             </span>
           </div>
           {p.precoAntigo > p.preco && (
-            <div className="mt-1 flex items-center gap-2 flex-wrap">
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
               <span className="text-xs text-slate-400 line-through">
                 {formatBRL(p.precoAntigo)}
               </span>
-              <span
-                className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-1 rounded-md shadow-lg ring-2 ring-yellow-300"
+              <div
+                className="group relative inline-flex items-center gap-2.5 rounded-full pl-2 pr-3.5 py-1.5 overflow-hidden"
                 style={{
                   background:
-                    'linear-gradient(90deg, #FEF08A 0%, #FACC15 45%, #EAB308 100%)',
-                  color: '#422006',
-                  textShadow: '0 1px 0 rgba(255,255,255,0.55)',
+                    'linear-gradient(180deg, #FDE68A 0%, #FACC15 42%, #EAB308 78%, #CA8A04 100%)',
                   boxShadow:
-                    '0 4px 10px -2px rgba(234,179,8,0.55), 0 0 0 1px rgba(255,255,255,0.4) inset',
+                    '0 6px 16px -4px rgba(202,138,4,0.65), 0 2px 4px -1px rgba(120,53,15,0.35), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -2px 3px rgba(120,53,15,0.28)',
+                  border: '1px solid rgba(255,255,255,0.55)',
                 }}
               >
-                💰 Economize {formatBRL(p.precoAntigo - p.preco)} em seu bolso 👈
-              </span>
+                {/* reflexo/brilho superior */}
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-1 top-0 h-1/2 rounded-full"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 100%)',
+                  }}
+                />
+                {/* ícone carteira aberta com moeda */}
+                <span
+                  aria-hidden="true"
+                  className="relative flex items-center justify-center w-6 h-6 rounded-full shrink-0"
+                  style={{
+                    background:
+                      'radial-gradient(circle at 30% 25%, #FFFDF5 0%, #FEF3C7 55%, #FCD34D 100%)',
+                    boxShadow:
+                      'inset 0 1px 1px rgba(255,255,255,0.9), 0 1px 2px rgba(120,53,15,0.35)',
+                  }}
+                >
+                  <Wallet className="w-3.5 h-3.5 text-[#7A3E00]" strokeWidth={2.5} />
+                </span>
+
+                <span className="relative flex flex-col leading-none">
+                  <span
+                    className="text-[13px] font-black tracking-tight text-[#1A1206] whitespace-nowrap"
+                    style={{ textShadow: '0 1px 0 rgba(255,255,255,0.55)' }}
+                  >
+                    ECONOMIZE {formatBRL(p.precoAntigo - p.preco)}
+                  </span>
+                  <span className="mt-1 self-start rounded-full bg-[#111111] px-2 py-[3px] text-[9px] font-bold uppercase tracking-wide text-[#FACC15] whitespace-nowrap">
+                    em seu bolso
+                  </span>
+                </span>
+              </div>
             </div>
           )}
         </div>
