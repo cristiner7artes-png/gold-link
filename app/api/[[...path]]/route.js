@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getStore } from '@netlify/blobs';
 import productsData from '../../../products.json';
 import { getProductsCollection } from '../../../lib/mongodb';
+import { runRobot, getConfig, saveConfig, getLogs, getMetrics } from '../../../lib/robot';
+import { hasMlCredentials, ALL_CATEGORIES } from '../../../lib/mercadolivre';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,13 +57,18 @@ async function handleLogin(request) {
   }
 }
 
-async function handleListProducts() {
+async function handleListProducts(request) {
   try {
     const collection = await getProductsCollection();
     await ensureSeeded(collection);
+    const url = new URL(request.url);
+    const all = url.searchParams.get('all') === '1';
+    // Público vê apenas ofertas ativas; admin (?all=1) vê todas para gerenciar.
+    const filter = all ? {} : { ativo: { $ne: false } };
+    // Ordena por pontuação (maior prioridade primeiro) e depois pelas mais recentes.
     const list = await collection
-      .find({}, { projection: { _id: 0 } })
-      .sort({ createdAt: -1 })
+      .find(filter, { projection: { _id: 0 } })
+      .sort({ score: -1, createdAt: -1 })
       .toArray();
     return ok(list);
   } catch (e) {
@@ -713,6 +720,9 @@ async function handleScrapeProduct(request) {
       { keys: ['bicicleta', 'esporte', 'fitness', 'bike', 'academia', 'suplemento', 'whey'], v: 'Esportes' },
       { keys: ['perfume', 'beleza', 'maquiagem', 'shampoo', 'creme', 'batom', 'cosmético'], v: 'Beleza' },
       { keys: ['bebê', 'bebe', 'infantil', 'brinquedo', 'lego', 'boneca'], v: 'Infantil' },
+      { keys: ['artesanal', 'artesanato', 'artesanatos', 'feito à mão', 'feito a mao', 'crochê', 'croche', 'tricô', 'trico', 'macramê', 'macrame', 'papelaria', 'scrapbook', 'costura', 'bordado'], v: 'Artesanatos' },
+      { keys: ['farmácia', 'farmacia', 'remédio', 'remedio', 'medicamento', 'vitamina', 'suplemento', 'saúde', 'saude', 'termômetro', 'termometro', 'máscara cirúrgica', 'curativo', 'fralda geriátrica'], v: 'Farmácia' },
+      { keys: ['alimento', 'alimentos', 'comida', 'bebida', 'café', 'cafe', 'chocolate', 'biscoito', 'snack', 'cesta básica', 'cesta basica', 'azeite', 'grãos', 'graos', 'temperos'], v: 'Alimentos' },
     ];
     const low = (nome + ' ' + finalUrl).toLowerCase();
     for (const c of catMap) {
@@ -801,6 +811,107 @@ async function handleSaveBanner(request) {
   }
 }
 
+/* ---------- Robô automático de ofertas ---------- */
+
+async function handleRobotStatus(request) {
+  if (!isAuthed(request)) return err('Não autorizado', 401);
+  try {
+    const [cfg, metrics, logs] = await Promise.all([getConfig(), getMetrics(), getLogs(40)]);
+    return ok({
+      credenciais: hasMlCredentials(),
+      categorias: ALL_CATEGORIES,
+      config: cfg,
+      metrics,
+      logs,
+    });
+  } catch (e) {
+    console.error('[v0] Erro status robô:', e.message);
+    return err('Não foi possível carregar o robô: ' + e.message, 500);
+  }
+}
+
+async function handleRobotSettings(request) {
+  if (!isAuthed(request)) return err('Não autorizado', 401);
+  try {
+    const b = await request.json();
+    const clampNum = (v, min, max, dflt) => {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return dflt;
+      return Math.min(max, Math.max(min, n));
+    };
+    const patch = {
+      intervaloMin: clampNum(b.intervaloMin, 15, 1440, 60),
+      maxPorCategoria: clampNum(b.maxPorCategoria, 1, 100, 12),
+      maxProdutos: clampNum(b.maxProdutos, 1, 2000, 150),
+      precoMin: clampNum(b.precoMin, 0, 10000000, 0),
+      precoMax: clampNum(b.precoMax, 0, 10000000, 0),
+      exigirFreteGratis: Boolean(b.exigirFreteGratis),
+      descontoMin: clampNum(b.descontoMin, 0, 99, 0),
+      categoriasPermitidas: Array.isArray(b.categoriasPermitidas)
+        ? b.categoriasPermitidas.filter((c) => ALL_CATEGORIES.includes(c))
+        : ALL_CATEGORIES,
+      afiliado: { mercadolivre: String(b?.afiliado?.mercadolivre || '').trim() },
+    };
+    if (b.pesos && typeof b.pesos === 'object') {
+      patch.pesos = {};
+      for (const k of ['desconto', 'frete', 'disponibilidade', 'popularidade', 'cliques', 'recente', 'preco']) {
+        patch.pesos[k] = clampNum(b.pesos[k], 0, 100, 10);
+      }
+    }
+    if (!patch.categoriasPermitidas.length) patch.categoriasPermitidas = ALL_CATEGORIES;
+    const cfg = await saveConfig(patch);
+    return ok(cfg);
+  } catch (e) {
+    return err('Erro ao salvar configurações: ' + e.message, 500);
+  }
+}
+
+async function handleRobotRun(request) {
+  if (!isAuthed(request)) return err('Não autorizado', 401);
+  if (!hasMlCredentials()) {
+    return err('Credenciais do Mercado Livre não configuradas.', 400);
+  }
+  const result = await runRobot({ trigger: 'manual' });
+  if (!result.ok) return err(result.error || 'Falha ao executar o robô', 400);
+  return ok(result);
+}
+
+async function handleRobotToggle(request, ativo) {
+  if (!isAuthed(request)) return err('Não autorizado', 401);
+  const cfg = await saveConfig({ ativo });
+  return ok({ ativo: cfg.ativo });
+}
+
+async function handleTrackClick(id) {
+  try {
+    const collection = await getProductsCollection();
+    await collection.updateOne({ id }, { $inc: { cliques: 1 } });
+    return ok({ ok: true });
+  } catch (e) {
+    return ok({ ok: false });
+  }
+}
+
+// Endpoint de cron: executa o robô se o intervalo configurado já passou.
+async function handleCronRobot() {
+  try {
+    if (!hasMlCredentials()) return ok({ skipped: 'sem credenciais' });
+    const cfg = await getConfig();
+    if (!cfg.ativo) return ok({ skipped: 'robô pausado' });
+    if (cfg.running) return ok({ skipped: 'já em execução' });
+    if (cfg.lastRun) {
+      const elapsedMin = (Date.now() - new Date(cfg.lastRun).getTime()) / 60000;
+      if (elapsedMin < cfg.intervaloMin) {
+        return ok({ skipped: `aguardando intervalo (${Math.round(cfg.intervaloMin - elapsedMin)}min)` });
+      }
+    }
+    const result = await runRobot({ trigger: 'cron' });
+    return ok(result);
+  } catch (e) {
+    return err('Erro no cron do robô: ' + e.message, 500);
+  }
+}
+
 /* ---------- Router ---------- */
 
 async function router(request, context) {
@@ -819,14 +930,28 @@ async function router(request, context) {
     if (path === 'admin/scrape' && method === 'POST') return handleScrapeProduct(request);
     if (path === 'admin/check-offers' && method === 'POST') return handleCheckOffers(request);
 
+    // Robô automático de ofertas
+    if (path === 'admin/robot' && method === 'GET') return handleRobotStatus(request);
+    if (path === 'admin/robot/settings' && (method === 'PUT' || method === 'POST')) return handleRobotSettings(request);
+    if (path === 'admin/robot/run' && method === 'POST') return handleRobotRun(request);
+    if (path === 'admin/robot/pause' && method === 'POST') return handleRobotToggle(request, false);
+    if (path === 'admin/robot/resume' && method === 'POST') return handleRobotToggle(request, true);
+    if (path === 'cron/robot' && method === 'GET') return handleCronRobot();
+
     if (path === 'banner' && method === 'GET') return handleGetBanner();
     if (path === 'banner' && (method === 'PUT' || method === 'POST')) return handleSaveBanner(request);
 
-    if (path === 'products' && method === 'GET') return handleListProducts();
+    if (path === 'products' && method === 'GET') return handleListProducts(request);
     if (path === 'products' && method === 'POST') return handleCreateProduct(request);
 
     if (path.startsWith('products/')) {
-      const id = decodeURIComponent(path.slice('products/'.length));
+      const rest = path.slice('products/'.length);
+      // POST /products/:id/click — rastreia cliques na oferta (público)
+      if (rest.endsWith('/click') && method === 'POST') {
+        const id = decodeURIComponent(rest.slice(0, -'/click'.length));
+        if (id) return handleTrackClick(id);
+      }
+      const id = decodeURIComponent(rest);
       if (id) {
         if (method === 'PUT' || method === 'PATCH') return handleUpdateProduct(request, id);
         if (method === 'DELETE') return handleDeleteProduct(request, id);

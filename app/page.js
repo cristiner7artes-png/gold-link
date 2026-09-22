@@ -17,6 +17,9 @@ import {
   Dumbbell,
   Sparkles,
   Baby,
+  Palette,
+  HeartPulse,
+  Apple,
   Clock,
   Tag,
 } from 'lucide-react';
@@ -29,6 +32,9 @@ const CATEGORIAS = [
   { nome: 'Esportes', icon: Dumbbell, cor: '#EC4899' },
   { nome: 'Beleza', icon: Sparkles, cor: '#1565C0' },
   { nome: 'Infantil', icon: Baby, cor: '#F59E0B' },
+  { nome: 'Artesanatos', icon: Palette, cor: '#EC4899' },
+  { nome: 'Farmácia', icon: HeartPulse, cor: '#1565C0' },
+  { nome: 'Alimentos', icon: Apple, cor: '#F59E0B' },
 ];
 
 /* ------------------ UTILITIES ------------------ */
@@ -458,12 +464,26 @@ function CountdownBanner() {
 }
 
 /* ------------------ PRODUCT CARD ------------------ */
+function trackClick(id) {
+  if (!id) return;
+  try {
+    // Rastreio "fire-and-forget": não bloqueia a navegação para a oferta.
+    const url = `/api/products/${encodeURIComponent(id)}/click`;
+    if (navigator.sendBeacon) navigator.sendBeacon(url);
+    else fetch(url, { method: 'POST', keepalive: true }).catch(() => {});
+  } catch {
+    // rastreio nunca deve atrapalhar o clique
+  }
+}
+
 function ProductCard({ p, index }) {
   return (
     <motion.a
       href={p.link}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => trackClick(p.id)}
+      onAuxClick={() => trackClick(p.id)}
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}

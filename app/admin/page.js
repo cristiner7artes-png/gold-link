@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-  import { Flame, LogOut, Plus, X, Save, LogIn, Package, Sparkles, Download, ImagePlus, Pencil, Trash2, RefreshCw, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+  import { Flame, LogOut, Plus, X, Save, LogIn, Package, Sparkles, Download, ImagePlus, Pencil, Trash2, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Bot, Play, Pause, Settings, Activity, TrendingUp, Clock, MousePointerClick, Zap, ListChecks } from 'lucide-react';
 
 const STORAGE_KEY = 'goldlink_admin_token';
-const CATEGORIAS = ['Eletrônicos', 'Casa', 'Moda', 'Esportes', 'Beleza', 'Infantil'];
+const CATEGORIAS = ['Eletrônicos', 'Celulares', 'Informática', 'Casa', 'Moda', 'Esportes', 'Infantil', 'Beleza', 'Automotivo', 'Games', 'Eletrodomésticos', 'Acessórios', 'Artesanatos', 'Farmácia', 'Alimentos', 'Outros'];
 const BADGES = ['', 'MAIS VENDIDO', 'OFERTA RELÂMPAGO', 'FRETE GRÁTIS', 'NOVO'];
 
 async function readApiResponse(response, fallbackMessage = 'Não foi possível concluir a operação') {
@@ -181,6 +181,7 @@ function Dashboard({ token, onLogout }) {
   const [checking, setChecking] = useState(false);
   const [checkResult, setCheckResult] = useState(null); // { resumo, resultados, verificadoEm }
   const [checkError, setCheckError] = useState('');
+  const [view, setView] = useState('ofertas'); // 'ofertas' | 'robo'
 
   useEffect(() => {
     fetch('/api/banner')
@@ -202,7 +203,7 @@ function Dashboard({ token, onLogout }) {
 
   async function reload() {
     setLoading(true);
-    const r = await fetch('/api/products');
+    const r = await fetch('/api/products?all=1');
     const d = await readApiResponse(r, 'Não foi possível carregar as ofertas');
     setProducts(Array.isArray(d) ? d : []);
     setLoading(false);
@@ -278,7 +279,34 @@ function Dashboard({ token, onLogout }) {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white border-b border-black/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-1">
+          <button
+            onClick={() => setView('ofertas')}
+            className={`inline-flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition ${
+              view === 'ofertas'
+                ? 'border-[#1565C0] text-[#1565C0]'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Package className="w-4 h-4" /> Ofertas
+          </button>
+          <button
+            onClick={() => setView('robo')}
+            className={`inline-flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition ${
+              view === 'robo'
+                ? 'border-[#1565C0] text-[#1565C0]'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Bot className="w-4 h-4" /> Robô de Ofertas
+          </button>
+        </div>
+      </div>
+
+      {view === 'robo' && <RobotPanel token={token} onProductsChanged={reload} />}
+
+      <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${view === 'robo' ? 'hidden' : ''}`}>
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-extrabold text-[#0F172A]">Ofertas</h1>
@@ -840,5 +868,365 @@ function Field({ label, children }) {
       <span className="text-xs font-bold uppercase tracking-wider text-slate-600">{label}</span>
       <div className="mt-1">{children}</div>
     </label>
+  );
+}
+
+function fmtDateTime(v) {
+  if (!v) return '—';
+  try {
+    return new Date(v).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '—';
+  }
+}
+
+function StatCard({ icon: Icon, label, value, tint }) {
+  return (
+    <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-4">
+      <div className="flex items-center gap-2 text-slate-500 text-xs font-bold uppercase tracking-wider">
+        <Icon className="w-4 h-4" style={{ color: tint }} />
+        {label}
+      </div>
+      <div className="mt-2 text-2xl font-extrabold text-[#0F172A]">{value}</div>
+    </div>
+  );
+}
+
+function RobotPanel({ token, onProductsChanged }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [running, setRunning] = useState(false);
+  const [runMsg, setRunMsg] = useState(null);
+  const [savingCfg, setSavingCfg] = useState(false);
+  const [savedMsg, setSavedMsg] = useState('');
+  const [form, setForm] = useState(null);
+
+  const auth = { Authorization: `Bearer ${token}` };
+
+  async function load() {
+    setLoading(true);
+    setError('');
+    try {
+      const r = await fetch('/api/admin/robot', { headers: auth });
+      const d = await readApiResponse(r, 'Não foi possível carregar o robô');
+      setData(d);
+      setForm(d.config);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  async function runNow() {
+    setRunning(true);
+    setRunMsg(null);
+    setError('');
+    try {
+      const r = await fetch('/api/admin/robot/run', { method: 'POST', headers: auth });
+      const d = await readApiResponse(r, 'Não foi possível executar o robô');
+      setRunMsg(d);
+      await load();
+      onProductsChanged?.();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  async function toggleAtivo(ativo) {
+    try {
+      const r = await fetch(`/api/admin/robot/${ativo ? 'resume' : 'pause'}`, { method: 'POST', headers: auth });
+      await readApiResponse(r, 'Não foi possível atualizar o robô');
+      await load();
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  async function saveConfig() {
+    setSavingCfg(true);
+    setSavedMsg('');
+    setError('');
+    try {
+      const r = await fetch('/api/admin/robot/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...auth },
+        body: JSON.stringify(form),
+      });
+      const d = await readApiResponse(r, 'Não foi possível salvar as configurações');
+      setForm(d);
+      setData((prev) => (prev ? { ...prev, config: d } : prev));
+      setSavedMsg('Configurações salvas.');
+      setTimeout(() => setSavedMsg(''), 2500);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSavingCfg(false);
+    }
+  }
+
+  function toggleCategoria(cat) {
+    setForm((f) => {
+      const cur = new Set(f.categoriasPermitidas || []);
+      if (cur.has(cat)) cur.delete(cat);
+      else cur.add(cat);
+      return { ...f, categoriasPermitidas: Array.from(cur) };
+    });
+  }
+
+  if (loading) {
+    return <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-slate-500">Carregando robô...</div>;
+  }
+
+  const m = data?.metrics || {};
+  const cfg = data?.config || {};
+  const logs = data?.logs || [];
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {!data?.credenciais && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 font-semibold flex items-start gap-2">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+          Credenciais do Mercado Livre não configuradas. O robô não conseguirá buscar novas ofertas até que sejam adicionadas.
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-[#E53935] font-semibold">{error}</div>
+      )}
+
+      {/* Cabeçalho + controles */}
+      <div className="bg-gradient-to-br from-[#0F172A] to-[#1E293B] rounded-2xl p-5 sm:p-6 text-white">
+        <div className="flex items-start justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${cfg.ativo ? 'bg-[#22C55E]' : 'bg-slate-600'}`}>
+              <Bot className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold flex items-center gap-2">
+                Robô de Ofertas
+                <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${cfg.ativo ? 'bg-[#22C55E] text-white' : 'bg-slate-500 text-white'}`}>
+                  {cfg.ativo ? 'Ativo' : 'Pausado'}
+                </span>
+                {cfg.running && (
+                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#FF6F00] text-white animate-pulse">
+                    Executando
+                  </span>
+                )}
+              </h2>
+              <p className="text-sm text-slate-300 mt-0.5">
+                Busca ofertas reais no Mercado Livre, categoriza, prioriza e mantém a vitrine sempre atualizada.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={runNow}
+              disabled={running || !data?.credenciais}
+              className="inline-flex items-center gap-2 bg-[#FF6F00] hover:bg-[#e56500] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-4 py-2.5 rounded-lg shadow-md transition"
+            >
+              <Zap className={`w-5 h-5 ${running ? 'animate-pulse' : ''}`} />
+              {running ? 'Buscando ofertas...' : 'Buscar ofertas agora'}
+            </button>
+            {cfg.ativo ? (
+              <button
+                onClick={() => toggleAtivo(false)}
+                className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold px-4 py-2.5 rounded-lg transition"
+              >
+                <Pause className="w-5 h-5" /> Pausar
+              </button>
+            ) : (
+              <button
+                onClick={() => toggleAtivo(true)}
+                className="inline-flex items-center gap-2 bg-[#22C55E] hover:bg-[#16a34a] text-white font-bold px-4 py-2.5 rounded-lg transition"
+              >
+                <Play className="w-5 h-5" /> Ativar
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-300">
+          <span className="inline-flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Última execução: <strong className="text-white">{fmtDateTime(cfg.lastRun)}</strong></span>
+          <span className="inline-flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" /> Intervalo automático: <strong className="text-white">{cfg.intervaloMin} min</strong></span>
+        </div>
+      </div>
+
+      {runMsg && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-sm text-emerald-800">
+          <strong className="font-bold">Busca concluída.</strong>{' '}
+          {runMsg.adicionadas ?? 0} novas ofertas adicionadas
+          {typeof runMsg.expiradas === 'number' ? `, ${runMsg.expiradas} expiradas desativadas` : ''}
+          {runMsg.erros ? `, ${runMsg.erros} erro(s)` : ''}.
+          {runMsg.nextRun ? ` Próxima execução automática por volta de ${fmtDateTime(runMsg.nextRun)}.` : ''}
+        </div>
+      )}
+
+      {/* Métricas */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard icon={Package} label="Ofertas ativas" value={m.ativas ?? 0} tint="#1565C0" />
+        <StatCard icon={Bot} label="Do robô" value={m.robotTotal ?? 0} tint="#0F172A" />
+        <StatCard icon={MousePointerClick} label="Cliques totais" value={m.totalCliques ?? 0} tint="#FF6F00" />
+        <StatCard icon={TrendingUp} label="Adicionadas hoje" value={m.adicionadasHoje ?? 0} tint="#22C55E" />
+      </div>
+
+      {/* Ofertas por categoria + mais acessadas */}
+      {(m.porCategoria?.length > 0 || m.maisAcessadas?.length > 0) && (
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
+            <div className="flex items-center gap-2 font-extrabold text-[#0F172A] mb-3">
+              <ListChecks className="w-5 h-5 text-[#1565C0]" /> Ofertas ativas por categoria
+            </div>
+            {m.porCategoria?.length ? (
+              <ul className="space-y-1.5">
+                {m.porCategoria.map((c) => (
+                  <li key={c.categoria} className="flex items-center justify-between text-sm">
+                    <span className="text-slate-600">{c.categoria}</span>
+                    <span className="font-bold text-[#0F172A]">{c.total}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-sm text-slate-400">Sem ofertas ainda.</p>}
+          </div>
+          <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
+            <div className="flex items-center gap-2 font-extrabold text-[#0F172A] mb-3">
+              <MousePointerClick className="w-5 h-5 text-[#FF6F00]" /> Ofertas mais acessadas
+            </div>
+            {m.maisAcessadas?.length ? (
+              <ul className="space-y-1.5">
+                {m.maisAcessadas.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-slate-600 truncate">{p.nome}</span>
+                    <span className="font-bold text-[#FF6F00] flex-shrink-0">{p.cliques} cliques</span>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-sm text-slate-400">Nenhum clique registrado ainda.</p>}
+          </div>
+        </div>
+      )}
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Configurações */}
+        <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
+          <div className="flex items-center gap-2 font-extrabold text-[#0F172A] mb-4">
+            <Settings className="w-5 h-5 text-[#1565C0]" /> Configurações do robô
+          </div>
+
+          {form && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Intervalo (min)">
+                  <input type="number" min={15} max={1440} className={inputCls}
+                    value={form.intervaloMin}
+                    onChange={(e) => setForm({ ...form, intervaloMin: e.target.value })} />
+                </Field>
+                <Field label="Máx. por categoria">
+                  <input type="number" min={1} max={100} className={inputCls}
+                    value={form.maxPorCategoria}
+                    onChange={(e) => setForm({ ...form, maxPorCategoria: e.target.value })} />
+                </Field>
+                <Field label="Máx. total de ofertas">
+                  <input type="number" min={1} max={2000} className={inputCls}
+                    value={form.maxProdutos}
+                    onChange={(e) => setForm({ ...form, maxProdutos: e.target.value })} />
+                </Field>
+                <Field label="Desconto mínimo (%)">
+                  <input type="number" min={0} max={99} className={inputCls}
+                    value={form.descontoMin}
+                    onChange={(e) => setForm({ ...form, descontoMin: e.target.value })} />
+                </Field>
+                <Field label="Preço mín. (R$)">
+                  <input type="number" min={0} className={inputCls}
+                    value={form.precoMin}
+                    onChange={(e) => setForm({ ...form, precoMin: e.target.value })} />
+                </Field>
+                <Field label="Preço máx. (R$) — 0 = sem limite">
+                  <input type="number" min={0} className={inputCls}
+                    value={form.precoMax}
+                    onChange={(e) => setForm({ ...form, precoMax: e.target.value })} />
+                </Field>
+              </div>
+
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <input type="checkbox" className="w-4 h-4 accent-[#1565C0]"
+                  checked={!!form.exigirFreteGratis}
+                  onChange={(e) => setForm({ ...form, exigirFreteGratis: e.target.checked })} />
+                Somente ofertas com frete grátis
+              </label>
+
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Categorias buscadas</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(data?.categorias || []).map((cat) => {
+                    const on = (form.categoriasPermitidas || []).includes(cat);
+                    return (
+                      <button key={cat} type="button" onClick={() => toggleCategoria(cat)}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-full border transition ${
+                          on ? 'bg-[#1565C0] text-white border-[#1565C0]' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                        }`}>
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <Field label="Tag de afiliado Mercado Livre (opcional)">
+                <input className={inputCls} placeholder="ex.: seu-id-afiliado"
+                  value={form.afiliado?.mercadolivre || ''}
+                  onChange={(e) => setForm({ ...form, afiliado: { ...form.afiliado, mercadolivre: e.target.value } })} />
+              </Field>
+
+              <div className="flex items-center gap-3 pt-1">
+                <button onClick={saveConfig} disabled={savingCfg}
+                  className="inline-flex items-center gap-2 bg-[#1565C0] hover:bg-[#0d47a1] disabled:opacity-60 text-white font-bold px-5 py-2.5 rounded-lg shadow-sm transition">
+                  <Save className="w-4 h-4" /> {savingCfg ? 'Salvando...' : 'Salvar configurações'}
+                </button>
+                {savedMsg && <span className="text-sm font-semibold text-emerald-600">{savedMsg}</span>}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Histórico */}
+        <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
+          <div className="flex items-center gap-2 font-extrabold text-[#0F172A] mb-4">
+            <Activity className="w-5 h-5 text-[#FF6F00]" /> Histórico de execuções
+          </div>
+          {logs.length === 0 ? (
+            <p className="text-sm text-slate-400">Nenhuma execução ainda. Clique em “Buscar ofertas agora”.</p>
+          ) : (
+            <ul className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
+              {logs.map((log, i) => {
+                const dot = log.tipo === 'erro'
+                  ? 'bg-[#E53935]'
+                  : log.tipo === 'aviso'
+                    ? 'bg-amber-500'
+                    : log.tipo === 'sucesso'
+                      ? 'bg-[#22C55E]'
+                      : 'bg-[#1565C0]';
+                return (
+                  <li key={i} className="flex items-start gap-3 text-sm border-b border-slate-100 pb-2 last:border-0">
+                    <span className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-[#0F172A]">{log.mensagem}</span>
+                        <span className="text-xs text-slate-400 flex-shrink-0">{fmtDateTime(log.data)}</span>
+                      </div>
+                      {log.detalhe && <div className="text-xs text-slate-500 mt-0.5">{log.detalhe}</div>}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
