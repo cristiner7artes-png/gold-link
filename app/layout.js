@@ -1,5 +1,6 @@
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
+import GoogleTag from '@/components/google-tag';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -22,6 +23,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR" className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <body className="font-sans antialiased bg-[#F8FAFC] text-[#0F172A]">
+        <GoogleTag />
         {children}
       </body>
     </html>
