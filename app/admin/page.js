@@ -1177,9 +1177,12 @@ function RobotPanel({ token, onProductsChanged }) {
               </div>
 
               <Field label="Tag de afiliado Mercado Livre (opcional)">
-                <input className={inputCls} placeholder="ex.: seu-id-afiliado"
+                <input className={inputCls} placeholder="ex.: goldlink  ou  matt_word=goldlink&matt_tool=12345"
                   value={form.afiliado?.mercadolivre || ''}
                   onChange={(e) => setForm({ ...form, afiliado: { ...form.afiliado, mercadolivre: e.target.value } })} />
+                <p className="mt-1.5 text-[12px] leading-relaxed text-slate-500">
+                  O Mercado Livre não permite gerar links curtos <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[11px]">meli.la</code> automaticamente por API. Em vez disso, o robô anexa sua <strong>tag de afiliado</strong> ao link oficial do produto, o que credita a comissão à sua conta do mesmo jeito. Cole sua tag (encontrada no painel de Afiliados do Mercado Livre) ou os parâmetros completos <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[11px]">matt_word</code>/<code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[11px]">matt_tool</code>.
+                </p>
               </Field>
 
               <div className="flex items-center gap-3 pt-1">
