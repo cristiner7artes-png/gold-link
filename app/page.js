@@ -23,20 +23,78 @@ import {
   Clock,
   Tag,
   Wallet,
+  X,
+  ChevronRight,
+  Trophy,
 } from 'lucide-react';
 
 /* ------------------ DATA ------------------ */
+const loop = (duration, extra = {}) => ({
+  duration,
+  repeat: Infinity,
+  ease: 'easeInOut',
+  ...extra,
+});
+
 const CATEGORIAS = [
-  { nome: 'Eletrônicos', icon: Smartphone, cor: '#EC4899' },
-  { nome: 'Casa', icon: Home, cor: '#1565C0' },
-  { nome: 'Moda', icon: Shirt, cor: '#F59E0B' },
-  { nome: 'Esportes', icon: Dumbbell, cor: '#EC4899' },
-  { nome: 'Beleza', icon: Sparkles, cor: '#1565C0' },
-  { nome: 'Infantil', icon: Baby, cor: '#F59E0B' },
-  { nome: 'Artesanatos', icon: Palette, cor: '#EC4899' },
-  { nome: 'Farmácia', icon: HeartPulse, cor: '#1565C0' },
-  { nome: 'Alimentos', icon: Apple, cor: '#F59E0B' },
+  {
+    nome: 'Eletrônicos', icon: Smartphone, cor: '#EC4899', img: '/images/cat/eletronicos.png',
+    bg: 'linear-gradient(135deg, #2a1030 0%, #3b1240 55%, #1d0a24 100%)', pill: '#E6176F', glow: '#F472B6',
+    anim: { y: [0, -8, 0], rotate: [-4, 4, -4] }, trans: loop(3.2),
+  },
+  {
+    nome: 'Casa', icon: Home, cor: '#1565C0', img: '/images/cat/casa.png',
+    bg: 'linear-gradient(135deg, #1546c8 0%, #1d5cf0 55%, #0f36a0 100%)', pill: '#1E66F5', glow: '#60A5FA',
+    anim: { y: [0, -4, 0], scale: [1, 1.03, 1] }, trans: loop(3.6),
+  },
+  {
+    nome: 'Moda', icon: Shirt, cor: '#F59E0B', img: '/images/cat/moda.png',
+    bg: 'linear-gradient(135deg, #a84a08 0%, #d0610c 55%, #6e2c04 100%)', pill: '#F26B0F', glow: '#FDBA74',
+    anim: { rotate: [-6, 6, -6] }, trans: loop(2.8), origin: '50% 5%',
+  },
+  {
+    nome: 'Esportes', icon: Dumbbell, cor: '#EF4444', img: '/images/cat/esportes.png',
+    bg: 'linear-gradient(135deg, #9e0f1c 0%, #c8162a 55%, #6a0812 100%)', pill: '#E11D2E', glow: '#F87171',
+    anim: { y: [0, -14, 0], scaleY: [1, 1, 0.96, 1] }, trans: loop(1.4, { ease: [0.33, 0, 0.67, 1] }),
+  },
+  {
+    nome: 'Beleza', icon: Sparkles, cor: '#06B6D4', img: '/images/cat/beleza.png',
+    bg: 'linear-gradient(135deg, #0f6f8a 0%, #1495b3 55%, #0a4a5e 100%)', pill: '#0EA5B7', glow: '#67E8F9',
+    anim: { rotate: [0, -4, 4, 0], scale: [1, 1.04, 1] }, trans: loop(3.4),
+  },
+  {
+    nome: 'Infantil', icon: Baby, cor: '#7C3AED', img: '/images/cat/infantil.png',
+    bg: 'linear-gradient(135deg, #5b1fc0 0%, #7433e0 55%, #3d128a 100%)', pill: '#8B3CF6', glow: '#C4B5FD',
+    anim: { rotate: [-3, 3, -3], y: [0, -3, 0] }, trans: loop(2.4), origin: '50% 90%',
+  },
+  {
+    nome: 'Artesanatos', icon: Palette, cor: '#F97316', img: '/images/cat/artesanatos.png',
+    bg: 'linear-gradient(135deg, #b44e05 0%, #e06a0a 55%, #7a3303 100%)', pill: '#F57C0F', glow: '#FDBA74',
+    anim: { rotate: [-7, 7, -7] }, trans: loop(4),
+  },
+  {
+    nome: 'Farmácia', icon: HeartPulse, cor: '#16A34A', img: '/images/cat/farmacia.png',
+    bg: 'linear-gradient(135deg, #0e7a2c 0%, #13a13a 55%, #08521c 100%)', pill: '#16A34A', glow: '#86EFAC',
+    anim: { scale: [1, 1.06, 1] }, trans: loop(1.8),
+  },
+  {
+    nome: 'Alimentos', icon: Apple, cor: '#DB2777', img: '/images/cat/alimentos.png',
+    bg: 'linear-gradient(135deg, #a3127a 0%, #cc1b96 55%, #6e0a52 100%)', pill: '#E0198F', glow: '#F9A8D4',
+    anim: { y: [0, -6, 0], rotate: [2, -2, 2] }, trans: loop(3),
+  },
 ];
+
+const ADS_CONVERSION = 'AW-18466543528/YDL1CLuTs4AdEKivxOVE';
+
+function trackAdsConversion() {
+  if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+    window.gtag('event', 'conversion', {
+      send_to: ADS_CONVERSION,
+      value: 1.0,
+      currency: 'BRL',
+    });
+  }
+}
 
 /* ------------------ UTILITIES ------------------ */
 const formatBRL = (v) =>
@@ -76,8 +134,17 @@ function CarrinhoCheio({ className }) {
 }
 
 /* ------------------ HEADER ------------------ */
+const NAV_LINKS = [
+  { href: '#inicio', label: 'Início' },
+  { href: '#promocoes', label: 'Promoções' },
+  { href: '#mais-vendidos', label: 'Mais Vendidos' },
+  { href: '#categorias', label: 'Categorias' },
+  { href: '/quem-somos', label: 'Quem Somos' },
+];
+
 function Header() {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll);
@@ -114,22 +181,47 @@ function Header() {
         </a>
 
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#0F172A]">
-          <a href="#inicio" className="hover:text-[#1565C0] transition">Início</a>
-          <a href="#promocoes" className="hover:text-[#1565C0] transition">Promoções</a>
-          <a href="#mais-vendidos" className="hover:text-[#1565C0] transition">Mais Vendidos</a>
-          <a href="#categorias" className="hover:text-[#1565C0] transition">Categorias</a>
+          {NAV_LINKS.map((l) => (
+            <a key={l.href} href={l.href} className="hover:text-[#1565C0] transition">
+              {l.label}
+            </a>
+          ))}
         </nav>
 
-        <div className="flex items-center gap-3">
-          <button className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#E53935] hover:bg-[#c62828] text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all hover:scale-[1.03]">
-            <Tag className="w-4 h-4" />
-            Minhas Ofertas
-          </button>
-          <button className="md:hidden p-2 rounded-lg hover:bg-black/5">
+        <button
+          type="button"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-expanded={menuOpen}
+          aria-controls="menu-mobile"
+          aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
+          className="md:hidden inline-flex items-center justify-center w-11 h-11 rounded-lg hover:bg-black/5"
+        >
+          {menuOpen ? (
+            <X className="w-6 h-6 text-[#0F172A]" />
+          ) : (
             <Menu className="w-6 h-6 text-[#0F172A]" />
-          </button>
-        </div>
+          )}
+        </button>
       </div>
+
+      {menuOpen && (
+        <nav
+          id="menu-mobile"
+          className="md:hidden border-t border-black/10 bg-[#FFE600] px-4 pb-4"
+        >
+          {NAV_LINKS.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center justify-between py-3.5 border-b border-black/10 last:border-0 text-base font-semibold text-[#0F172A]"
+            >
+              {l.label}
+              <ChevronRight className="w-5 h-5 text-[#1565C0]" />
+            </a>
+          ))}
+        </nav>
+      )}
     </header>
   );
 }
@@ -483,8 +575,8 @@ function ProductCard({ p, index }) {
       href={p.link}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={() => trackClick(p.id)}
-      onAuxClick={() => trackClick(p.id)}
+      onClick={() => { trackClick(p.id); trackAdsConversion(); }}
+      onAuxClick={() => { trackClick(p.id); trackAdsConversion(); }}
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
@@ -685,6 +777,54 @@ function Promocoes({ products, loading }) {
   );
 }
 
+/* ------------------ MAIS VENDIDOS ------------------ */
+function MaisVendidos({ products, loading }) {
+  const top = [...(products || [])]
+    .sort((a, b) => (b.reviews || 0) - (a.reviews || 0))
+    .slice(0, 6);
+
+  return (
+    <section id="mais-vendidos" className="py-20 bg-white scroll-mt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-10">
+          <div className="inline-flex items-center gap-2 bg-amber-50 text-[#B45309] text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
+            <Trophy className="w-3.5 h-3.5" />
+            Os favoritos
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0F172A]">
+            Mais <span className="text-[#1565C0]">Vendidos</span>
+          </h2>
+          <p className="mt-2 text-slate-600">
+            Os produtos com mais avaliações de compradores no Mercado Livre.
+          </p>
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="aspect-[3/4] rounded-2xl bg-slate-100 animate-pulse" />
+            ))}
+          </div>
+        ) : top.length === 0 ? (
+          <div className="bg-[#F8FAFC] rounded-2xl border border-dashed border-slate-200 p-12 text-center">
+            <Trophy className="w-12 h-12 mx-auto text-[#F59E0B] mb-3" />
+            <h3 className="text-lg font-bold text-[#0F172A]">Ranking em breve!</h3>
+            <p className="text-sm text-slate-500 mt-1">
+              Assim que novas ofertas chegarem, os mais vendidos aparecem aqui.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {top.map((p, i) => (
+              <ProductCard key={p.id} p={p} index={i} />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /* ------------------ CATEGORIAS ------------------ */
 function Categorias({ products, loading }) {
   const [categoriaAtiva, setCategoriaAtiva] = useState(null);
@@ -732,50 +872,70 @@ function Categorias({ products, loading }) {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {CATEGORIAS.map((c, i) => {
-            const Icon = c.icon;
             const count = counts[c.nome] || 0;
+            const ativa = categoriaAtiva === c.nome;
             return (
               <motion.button
                 key={c.nome}
                 type="button"
                 onClick={() => selecionarCategoria(c.nome)}
-                aria-pressed={categoriaAtiva === c.nome}
+                aria-pressed={ativa}
                 aria-controls="produtos-da-categoria"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.4, delay: i * 0.06 }}
-                whileHover={{ y: -6, scale: 1.03 }}
-                className={`group relative w-full bg-white rounded-2xl p-5 border shadow-sm hover:shadow-2xl transition-all duration-300 text-center overflow-hidden focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#1565C0]/25 ${
-                  categoriaAtiva === c.nome
-                    ? 'border-[#1565C0] ring-2 ring-[#1565C0]/15 shadow-lg'
-                    : 'border-black/5'
-                }`}
+                whileHover={{ y: -6, scale: 1.02 }}
+                className="group relative w-full h-36 sm:h-40 rounded-3xl overflow-hidden flex items-center text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#1565C0]/40"
                 style={{
-                  background: `linear-gradient(180deg, ${c.cor}0A 0%, #ffffff 60%)`,
+                  background: c.bg,
+                  border: `2px solid ${c.glow}${ativa ? 'FF' : '80'}`,
+                  boxShadow: `0 10px 30px -10px ${c.pill}AA, 0 0 ${ativa ? '24px' : '14px'} ${c.glow}66, inset 0 1px 0 rgba(255,255,255,0.25)`,
                 }}
               >
-                <div
-                  className="absolute inset-x-0 top-0 h-1.5"
-                  style={{ background: c.cor }}
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-0 top-0 h-1/2"
+                  style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0))' }}
                 />
-                <div
-                  className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-3 shadow-md transition-transform group-hover:scale-110 group-hover:rotate-6"
-                  style={{
-                    background: `linear-gradient(135deg, ${c.cor} 0%, ${c.cor}CC 100%)`,
-                  }}
+                <div className="relative h-full w-[46%] shrink-0 flex items-center justify-center">
+                  <motion.img
+                    src={c.img}
+                    alt=""
+                    aria-hidden="true"
+                    animate={c.anim}
+                    transition={c.trans}
+                    style={{
+                      transformOrigin: c.origin || '50% 50%',
+                      WebkitMaskImage: 'radial-gradient(circle at center, #000 55%, transparent 72%)',
+                      maskImage: 'radial-gradient(circle at center, #000 55%, transparent 72%)',
+                    }}
+                    className="h-[118%] w-auto max-w-none object-contain"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="relative flex-1 pr-4 flex flex-col items-start gap-2.5">
+                  <span
+                    className="text-xl sm:text-2xl font-extrabold text-white tracking-tight"
+                    style={{ textShadow: '0 2px 6px rgba(0,0,0,0.35)' }}
+                  >
+                    {c.nome}
+                  </span>
+                  <span
+                    className="rounded-full px-3.5 py-1 text-sm font-bold text-white"
+                    style={{ background: c.pill, boxShadow: `0 4px 12px -2px ${c.pill}` }}
+                  >
+                    {count} {count === 1 ? 'oferta' : 'ofertas'}
+                  </span>
+                </div>
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-3 right-3 w-10 h-10 rounded-full flex items-center justify-center bg-black/35 border border-white/30 transition-transform group-hover:translate-x-1"
                 >
-                  <Icon className="w-8 h-8 text-white" strokeWidth={2.4} />
-                </div>
-                <div className="font-bold text-[#0F172A] text-sm">{c.nome}</div>
-                <div className="mt-1 text-xs text-slate-500">
-                  <span className="font-extrabold text-base" style={{ color: c.cor }}>
-                    {count}
-                  </span>{' '}
-                  {count === 1 ? 'oferta' : 'ofertas'}
-                </div>
+                  <ChevronRight className="w-5 h-5 text-white" strokeWidth={2.5} />
+                </span>
               </motion.button>
             );
           })}
@@ -879,6 +1039,7 @@ function App() {
       <Hero products={products} banner={banner} />
       <CountdownBanner />
       <Promocoes products={products} loading={loading} />
+      <MaisVendidos products={products} loading={loading} />
       <Categorias products={products} loading={loading} />
 
       <section className="py-10 bg-[#0F172A] text-white/70 text-center text-sm">
