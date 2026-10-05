@@ -3,9 +3,18 @@
 import { useRef, useState, useEffect } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, getToolName, isToolUIPart, lastAssistantMessageIsCompleteWithApprovalResponses } from 'ai';
-import { Sparkles, Send, Check, X, Loader2, Wrench, RotateCcw, ShieldCheck } from 'lucide-react';
+import { Sparkles, Send, Check, X, Loader2, Wrench, RotateCcw, ShieldCheck, Zap, Gauge, Rocket } from 'lucide-react';
+
+const MODOS = [
+  { id: 'normal', label: 'Normal', desc: 'Rápido', Icon: Zap },
+  { id: 'medio', label: 'Médio', desc: 'Equilibrado', Icon: Gauge },
+  { id: 'turbo', label: 'Turbo', desc: 'Pesquisa profunda', Icon: Rocket },
+];
 
 const TOOL_LABELS = {
+  pesquisarWeb: 'Pesquisando na internet',
+  abrirSite: 'Abrindo site',
+  adicionarOferta: 'Cadastrar oferta',
   resumoSite: 'Consultando resumo do site',
   buscarOfertas: 'Buscando ofertas',
   excluirOfertas: 'Excluir ofertas',
@@ -18,14 +27,15 @@ const TOOL_LABELS = {
 const SUGESTOES = [
   'Mostre um resumo do site',
   'Quais ofertas de Moda não tiveram nenhum clique?',
+  'Pesquise as melhores ofertas de fone bluetooth hoje',
+  'Abra mercadolivre.com.br/ofertas e me diga os destaques',
   'Desative as ofertas com menos de 10% de desconto',
-  'Pause o robô de ofertas',
 ];
 
 function ToolPart({ part, onApprove }) {
   const name = getToolName(part);
   const label = TOOL_LABELS[name] || name;
-  const descricao = part.input?.descricao;
+  const descricao = part.input?.descricao || part.input?.query || part.input?.url;
 
   if (part.state === 'approval-requested' && !part.approval?.isAutomatic) {
     return (
@@ -85,12 +95,16 @@ function ToolPart({ part, onApprove }) {
 
 export default function AdminAgent({ token, onDataChanged }) {
   const [input, setInput] = useState('');
+  const [modo, setModo] = useState('medio');
+  const modoRef = useRef(modo);
+  modoRef.current = modo;
   const endRef = useRef(null);
 
   const { messages, sendMessage, addToolApprovalResponse, status, error, setMessages, stop } = useChat({
     transport: new DefaultChatTransport({
       api: '/api/admin/agent',
       headers: { Authorization: `Bearer ${token}` },
+      body: () => ({ modo: modoRef.current }),
     }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onFinish: () => onDataChanged?.(),
@@ -131,7 +145,7 @@ export default function AdminAgent({ token, onDataChanged }) {
             </div>
             <div>
               <h2 id="agent-title" className="font-extrabold text-[#181820] leading-tight">Agente IA</h2>
-              <p className="text-xs text-slate-500">Edita, ativa, desativa e exclui ofertas, controla o robô e o banner.</p>
+              <p className="text-xs text-slate-500">Pesquisa na internet, abre sites e gerencia ofertas, robô e banner.</p>
             </div>
           </div>
           {messages.length > 0 && (
@@ -142,6 +156,34 @@ export default function AdminAgent({ token, onDataChanged }) {
               <RotateCcw className="w-4 h-4" aria-hidden="true" /> Nova conversa
             </button>
           )}
+        </div>
+
+        <div className="px-4 sm:px-5 py-3 border-b border-black/5" role="radiogroup" aria-label="Modo do agente">
+          <div className="grid grid-cols-3 gap-2">
+            {MODOS.map(({ id, label, desc, Icon }) => {
+              const active = modo === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setModo(id)}
+                  className={`flex items-center justify-center gap-2 min-h-11 px-2 rounded-xl border text-sm font-bold transition ${
+                    active
+                      ? 'border-[#F0B000] bg-gradient-to-b from-[#FFD92E] via-[#F8D000] to-[#F0B000] text-[#181820] shadow-sm'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-[#F0B000]'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  <span className="flex flex-col items-start leading-tight">
+                    <span>{label}</span>
+                    <span className={`hidden sm:block text-[11px] font-medium ${active ? 'text-[#181820]/70' : 'text-slate-400'}`}>{desc}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 flex flex-col gap-4" aria-live="polite">
