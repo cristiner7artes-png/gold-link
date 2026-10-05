@@ -3,7 +3,7 @@ import { getStore } from '@netlify/blobs';
 import productsData from '../../../products.json';
 import { getProductsCollection } from '../../../lib/mongodb';
 import { runRobot, getConfig, saveConfig, getLogs, getMetrics } from '../../../lib/robot';
-import { hasMlCredentials, ALL_CATEGORIES } from '../../../lib/mercadolivre';
+import { hasMlCredentials, PLATFORM_CATEGORIES as ALL_CATEGORIES } from '../../../lib/mercadolivre';
 
 export const dynamic = 'force-dynamic';
 
