@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import AdminAgent from '../../components/admin-agent';
   import { Flame, LogOut, Plus, X, Save, LogIn, Package, Sparkles, Download, ImagePlus, Pencil, Trash2, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Bot, Play, Pause, Settings, Activity, TrendingUp, Clock, MousePointerClick, Zap, ListChecks } from 'lucide-react';
 
 const STORAGE_KEY = 'goldlink_admin_token';
@@ -301,12 +302,23 @@ function Dashboard({ token, onLogout }) {
           >
             <Bot className="w-4 h-4" /> Robô de Ofertas
           </button>
+          <button
+            onClick={() => setView('agente')}
+            className={`inline-flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition ${
+              view === 'agente'
+                ? 'border-[#1565C0] text-[#1565C0]'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" /> Agente IA
+          </button>
         </div>
       </div>
 
       {view === 'robo' && <RobotPanel token={token} onProductsChanged={reload} />}
+      {view === 'agente' && <AdminAgent token={token} onDataChanged={reload} />}
 
-      <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${view === 'robo' ? 'hidden' : ''}`}>
+      <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${view !== 'ofertas' ? 'hidden' : ''}`}>
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-extrabold text-[#0F172A]">Ofertas</h1>
