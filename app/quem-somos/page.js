@@ -44,7 +44,7 @@ export default function QuemSomosPage() {
         <p className="mt-6 text-lg sm:text-xl leading-relaxed text-slate-700 text-pretty">
           Gold Link é uma plataforma que facilita a sua compra: buscamos as melhores promoções
           para você economizar dinheiro no seu bolso, trabalhamos apenas com fornecedores bem
-          avaliados e que forneçam frete grátis.
+          avaliados e que fornecem frete grátis.
         </p>
         <p className="mt-8 text-2xl sm:text-3xl font-black text-[#0F172A]">
           Porque o seu tempo vale <span className="text-[#F0B000]">ouro</span>!
