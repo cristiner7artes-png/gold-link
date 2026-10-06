@@ -1072,6 +1072,7 @@ function RobotPanel({ token, onProductsChanged }) {
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-sm text-emerald-800">
           <strong className="font-bold">Busca concluída.</strong>{' '}
           {runMsg.adicionadas ?? 0} novas ofertas adicionadas
+          {runMsg.substituidas ? ` (${runMsg.substituidas} trocaram ofertas mais fracas)` : ''}
           {typeof runMsg.expiradas === 'number' ? `, ${runMsg.expiradas} expiradas desativadas` : ''}
           {runMsg.erros ? `, ${runMsg.erros} erro(s)` : ''}.
           {runMsg.nextRun ? ` Próxima execução automática por volta de ${fmtDateTime(runMsg.nextRun)}.` : ''}
