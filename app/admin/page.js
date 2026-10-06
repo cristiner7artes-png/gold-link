@@ -926,9 +926,18 @@ function RobotPanel({ token, onProductsChanged }) {
     setRunMsg(null);
     setError('');
     try {
-      const r = await fetch('/api/admin/robot/run', { method: 'POST', headers: auth });
-      const d = await readApiResponse(r, 'Não foi possível executar o robô');
-      setRunMsg(d);
+      const total = { adicionadas: 0, expiradas: 0, substituidas: 0 };
+      let d;
+      // Each run is time-limited on the server; keep going until every category is full.
+      for (let rodada = 0; rodada < 10; rodada++) {
+        const r = await fetch('/api/admin/robot/run', { method: 'POST', headers: auth });
+        d = await readApiResponse(r, 'Não foi possível executar o robô');
+        total.adicionadas += d.adicionadas || 0;
+        total.expiradas += d.expiradas || 0;
+        total.substituidas += d.substituidas || 0;
+        setRunMsg({ ...d, ...total });
+        if (!d.pendentes?.length) break;
+      }
       await load();
       onProductsChanged?.();
     } catch (e) {
