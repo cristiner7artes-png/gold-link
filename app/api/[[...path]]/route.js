@@ -6,6 +6,7 @@ import { runRobot, getConfig, saveConfig, getLogs, getMetrics } from '../../../l
 import { hasMlCredentials, PLATFORM_CATEGORIES as ALL_CATEGORIES } from '../../../lib/mercadolivre';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'usergold';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '251831';
