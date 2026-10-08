@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import RobotCategoryTools from '../../components/robot-category-tools';
   import { Flame, LogOut, Plus, X, Save, LogIn, Package, Sparkles, Download, ImagePlus, Pencil, Trash2, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Bot, Play, Pause, Settings, Activity, TrendingUp, Clock, MousePointerClick, Zap, ListChecks } from 'lucide-react';
 
 const STORAGE_KEY = 'goldlink_admin_token';
@@ -1083,6 +1084,16 @@ function RobotPanel({ token, onProductsChanged }) {
         <StatCard icon={MousePointerClick} label="Cliques totais" value={m.totalCliques ?? 0} tint="#FF6F00" />
         <StatCard icon={TrendingUp} label="Adicionadas hoje" value={m.adicionadasHoje ?? 0} tint="#22C55E" />
       </div>
+
+      {data?.categorias?.length > 0 && (
+        <RobotCategoryTools
+          token={token}
+          categorias={data.categorias}
+          porCategoria={m.porCategoria}
+          disabled={!data?.credenciais}
+          onDone={() => { load(); onProductsChanged?.(); }}
+        />
+      )}
 
       {/* Ofertas por categoria + mais acessadas */}
       {(m.porCategoria?.length > 0 || m.maisAcessadas?.length > 0) && (

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getStore } from '@netlify/blobs';
 import productsData from '../../../products.json';
 import { getProductsCollection } from '../../../lib/mongodb';
-import { runRobot, getConfig, saveConfig, getLogs, getMetrics } from '../../../lib/robot';
+import { runRobot, deleteOffers, getConfig, saveConfig, getLogs, getMetrics } from '../../../lib/robot';
 import { hasMlCredentials, PLATFORM_CATEGORIES as ALL_CATEGORIES } from '../../../lib/mercadolivre';
 
 export const dynamic = 'force-dynamic';
@@ -860,6 +860,9 @@ async function handleRobotSettings(request) {
       }
     }
     if (!patch.categoriasPermitidas.length) patch.categoriasPermitidas = ALL_CATEGORIES;
+    // Changing the general per-category amount resets the custom per-category targets.
+    const atual = await getConfig();
+    if (patch.maxPorCategoria !== Number(atual.maxPorCategoria)) patch.quotas = {};
     const cfg = await saveConfig(patch);
     return ok(cfg);
   } catch (e) {
@@ -872,9 +875,31 @@ async function handleRobotRun(request) {
   if (!hasMlCredentials()) {
     return err('Credenciais do Mercado Livre não configuradas.', 400);
   }
-  const result = await runRobot({ trigger: 'manual' });
+  const b = await request.json().catch(() => ({}));
+  const result = await runRobot({
+    trigger: 'manual',
+    categoria: typeof b?.categoria === 'string' && b.categoria ? b.categoria : null,
+    adicionar: Math.min(200, Math.max(0, Number(b?.adicionar) || 0)),
+  });
   if (!result.ok) return err(result.error || 'Falha ao executar o robô', 400);
   return ok(result);
+}
+
+async function handleRobotDelete(request) {
+  if (!isAuthed(request)) return err('Não autorizado', 401);
+  const b = await request.json().catch(() => ({}));
+  try {
+    const result = await deleteOffers({
+      categoria: b?.categoria,
+      quantidade: Math.min(500, Number(b?.quantidade) || 0),
+      criterio: b?.criterio,
+      origem: ['robot', 'manual', 'todas'].includes(b?.origem) ? b.origem : 'robot',
+    });
+    if (!result.ok) return err(result.error || 'Falha ao excluir ofertas', 400);
+    return ok(result);
+  } catch (e) {
+    return err('Erro ao excluir ofertas: ' + e.message, 500);
+  }
 }
 
 async function handleRobotToggle(request, ativo) {
@@ -935,6 +960,7 @@ async function router(request, context) {
     if (path === 'admin/robot' && method === 'GET') return handleRobotStatus(request);
     if (path === 'admin/robot/settings' && (method === 'PUT' || method === 'POST')) return handleRobotSettings(request);
     if (path === 'admin/robot/run' && method === 'POST') return handleRobotRun(request);
+    if (path === 'admin/robot/delete' && method === 'POST') return handleRobotDelete(request);
     if (path === 'admin/robot/pause' && method === 'POST') return handleRobotToggle(request, false);
     if (path === 'admin/robot/resume' && method === 'POST') return handleRobotToggle(request, true);
     if (path === 'cron/robot' && method === 'GET') return handleCronRobot();
