@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getStore } from '@netlify/blobs';
 import productsData from '../../../products.json';
 import { getProductsCollection } from '../../../lib/mongodb';
-import { runRobot, deleteOffers, getConfig, saveConfig, getLogs, getMetrics } from '../../../lib/robot';
+import { runRobot, deleteOffers, fixOffers, getConfig, saveConfig, getLogs, getMetrics } from '../../../lib/robot';
 import { hasMlCredentials, PLATFORM_CATEGORIES as ALL_CATEGORIES } from '../../../lib/mercadolivre';
 
 export const dynamic = 'force-dynamic';
@@ -902,6 +902,19 @@ async function handleRobotDelete(request) {
   }
 }
 
+async function handleRobotFix(request) {
+  if (!isAuthed(request)) return err('Não autorizado', 401);
+  const b = await request.json().catch(() => ({}));
+  const desde = typeof b?.desde === 'string' && !Number.isNaN(Date.parse(b.desde)) ? b.desde : null;
+  try {
+    const result = await fixOffers({ desde });
+    if (!result.ok) return err(result.error || 'Falha ao consertar ofertas', 400);
+    return ok(result);
+  } catch (e) {
+    return err('Erro ao consertar ofertas: ' + e.message, 500);
+  }
+}
+
 async function handleRobotToggle(request, ativo) {
   if (!isAuthed(request)) return err('Não autorizado', 401);
   const cfg = await saveConfig({ ativo });
@@ -961,6 +974,7 @@ async function router(request, context) {
     if (path === 'admin/robot/settings' && (method === 'PUT' || method === 'POST')) return handleRobotSettings(request);
     if (path === 'admin/robot/run' && method === 'POST') return handleRobotRun(request);
     if (path === 'admin/robot/delete' && method === 'POST') return handleRobotDelete(request);
+    if (path === 'admin/robot/fix' && method === 'POST') return handleRobotFix(request);
     if (path === 'admin/robot/pause' && method === 'POST') return handleRobotToggle(request, false);
     if (path === 'admin/robot/resume' && method === 'POST') return handleRobotToggle(request, true);
     if (path === 'cron/robot' && method === 'GET') return handleCronRobot();
