@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2, Wrench } from 'lucide-react';
 
 const inputCls =
   'w-full min-h-[44px] rounded-lg border border-slate-200 bg-white px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/30 focus:border-[#1565C0]';
@@ -49,6 +49,44 @@ export default function RobotCategoryTools({ token, categorias, porCategoria, di
   const [origem, setOrigem] = useState('robot');
   const [deleting, setDeleting] = useState(false);
   const [delMsg, setDelMsg] = useState(null);
+
+  const [fixing, setFixing] = useState(false);
+  const [fixMsg, setFixMsg] = useState(null);
+
+  async function consertar() {
+    setFixing(true);
+    setFixMsg(null);
+    const desde = new Date().toISOString();
+    const soma = { verificadas: 0, consertadas: 0, trocadas: 0, semConserto: [] };
+    try {
+      for (let rodada = 0; rodada < 15; rodada++) {
+        const r = await fetch('/api/admin/robot/fix', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...auth },
+          body: JSON.stringify({ desde }),
+        });
+        const d = await readJson(r, 'Não foi possível consertar as ofertas');
+        soma.verificadas += d.verificadas || 0;
+        soma.consertadas += d.consertadas || 0;
+        soma.trocadas += d.trocadas || 0;
+        soma.semConserto.push(...(d.semConserto || []));
+        setFixMsg({ tipo: 'ok', texto: `Consertando... ${soma.verificadas} ofertas verificadas.` });
+        if (!d.restantes && !d.pendentes?.length) break;
+      }
+      setFixMsg({
+        tipo: soma.semConserto.length ? 'aviso' : 'ok',
+        texto: soma.verificadas
+          ? `${soma.verificadas} ofertas incompletas verificadas: ${soma.consertadas} consertadas e ${soma.trocadas} do robô trocadas por ofertas completas da mesma categoria.`
+          : 'Todas as ofertas já têm selo, nome, preço, desconto, estrelas, avaliações e frete grátis.',
+        itens: soma.semConserto.map((s) => `${s.nome} (${s.categoria}) — falta: ${s.faltam.join(', ')}`),
+      });
+      onDone?.();
+    } catch (err) {
+      setFixMsg({ tipo: 'erro', texto: err.message });
+    } finally {
+      setFixing(false);
+    }
+  }
 
   async function adicionar(e) {
     e.preventDefault();
@@ -124,8 +162,40 @@ export default function RobotCategoryTools({ token, categorias, porCategoria, di
         ? 'bg-amber-50 border-amber-200 text-amber-800'
         : 'bg-emerald-50 border-emerald-200 text-emerald-800';
 
+  const ocupado = adding || deleting || fixing;
+
   return (
     <div className="grid lg:grid-cols-2 gap-6">
+      <section className="lg:col-span-2 bg-white rounded-2xl border border-black/5 shadow-sm p-5 flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:justify-between">
+          <div>
+            <h3 className="flex items-center gap-2 font-extrabold text-[#0F172A]">
+              <Wrench className="w-5 h-5 text-[#1565C0]" /> Consertador de ofertas
+            </h3>
+            <p className="text-sm text-slate-500 mt-1 text-pretty">
+              Completa as ofertas sem selo, nome, preço, desconto, estrelas, avaliações ou frete grátis com dados do Mercado Livre. Ofertas do robô sem conserto são trocadas na mesma categoria.
+            </p>
+          </div>
+          <button type="button" onClick={consertar} disabled={ocupado || disabled}
+            className="inline-flex shrink-0 items-center justify-center gap-2 min-h-[44px] bg-[#1565C0] hover:bg-[#0D47A1] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-5 rounded-lg transition">
+            <Wrench className="w-5 h-5" /> {fixing ? 'Consertando...' : 'Consertar ofertas'}
+          </button>
+        </div>
+        {fixMsg && (
+          <div role="status" className={`text-sm border rounded-xl p-3 ${msgCls(fixMsg.tipo)}`}>
+            <p className="font-semibold">{fixMsg.texto}</p>
+            {fixMsg.itens?.length > 0 && (
+              <>
+                <p className="mt-2">Ofertas manuais que não puderam ser completadas (edite ou exclua):</p>
+                <ul className="mt-1 list-disc pl-5 space-y-0.5 max-h-40 overflow-y-auto">
+                  {fixMsg.itens.map((n, i) => <li key={i}>{n}</li>)}
+                </ul>
+              </>
+            )}
+          </div>
+        )}
+      </section>
+
       <form onSubmit={adicionar} className="bg-white rounded-2xl border border-black/5 shadow-sm p-5 flex flex-col gap-4">
         <div>
           <div className="flex items-center gap-2 font-extrabold text-[#0F172A]">
@@ -150,7 +220,7 @@ export default function RobotCategoryTools({ token, categorias, porCategoria, di
               onChange={(e) => setAddQtd(e.target.value)} />
           </div>
         </div>
-        <button type="submit" disabled={adding || deleting || disabled}
+        <button type="submit" disabled={ocupado || disabled}
           className="inline-flex items-center justify-center gap-2 min-h-[44px] bg-[#22C55E] hover:bg-[#16a34a] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-4 rounded-lg transition">
           <PlusCircle className="w-5 h-5" /> {adding ? 'Buscando ofertas...' : `Adicionar ${Number(addQtd) || 0} em ${addCat}`}
         </button>
@@ -195,7 +265,7 @@ export default function RobotCategoryTools({ token, categorias, porCategoria, di
             </select>
           </div>
         </div>
-        <button type="submit" disabled={adding || deleting}
+        <button type="submit" disabled={ocupado}
           className="inline-flex items-center justify-center gap-2 min-h-[44px] bg-[#E53935] hover:bg-[#c62828] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-4 rounded-lg transition">
           <Trash2 className="w-5 h-5" /> {deleting ? 'Excluindo...' : `Excluir ${Number(delQtd) || 0} de ${delCat}`}
         </button>
