@@ -14,8 +14,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata = {
-  title: 'Gold Link — As Melhores Ofertas do Mercado Livre',
-  description: 'Economize até 70% com ofertas selecionadas do Mercado Livre. Atualizado diariamente.',
+  title: 'Mercado Gold Link — Ofertas selecionadas no Mercado Livre',
+  description:
+    'Plataforma independente de divulgação de ofertas, afiliada ao Mercado Livre. Não é o site oficial do Mercado Livre.',
 };
 
 export default function RootLayout({ children }) {

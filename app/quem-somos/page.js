@@ -1,26 +1,27 @@
 import { ArrowLeft, BadgePercent, ShieldCheck, Truck } from 'lucide-react';
+import SiteFooter, { AFFILIATE_DISCLOSURE, CONTACT_EMAIL, CONTACT_NAME } from '@/components/site-footer';
 
 export const metadata = {
-  title: 'Quem Somos — Gold Link',
+  title: 'Quem Somos — Mercado Gold Link',
   description:
-    'Gold Link é uma plataforma que facilita a sua compra: buscamos as melhores promoções para você economizar.',
+    'O Mercado Gold Link é uma plataforma independente que divulga ofertas do Mercado Livre como afiliada. Não é o site oficial do Mercado Livre.',
 };
 
 const PILARES = [
-  { icon: BadgePercent, titulo: 'Melhores promoções', texto: 'Buscamos as ofertas para você economizar dinheiro no seu bolso.' },
-  { icon: ShieldCheck, titulo: 'Fornecedores bem avaliados', texto: 'Trabalhamos apenas com vendedores de boa reputação.' },
-  { icon: Truck, titulo: 'Frete grátis', texto: 'Priorizamos fornecedores que oferecem frete grátis.' },
+  { icon: BadgePercent, titulo: 'Ofertas com desconto', texto: 'Selecionamos produtos em promoção para você economizar.' },
+  { icon: ShieldCheck, titulo: 'Bem avaliados', texto: 'Damos preferência a produtos e vendedores com boas avaliações no Mercado Livre.' },
+  { icon: Truck, titulo: 'Frete grátis', texto: 'Priorizamos ofertas com frete grátis. Confira a condição final na página do produto.' },
 ];
 
 export default function QuemSomosPage() {
   return (
-    <main className="min-h-screen bg-[#F8FAFC]">
-      <header className="bg-[#FFE600] shadow-sm">
+    <main className="min-h-screen bg-[#F8FAFC] flex flex-col">
+      <header className="bg-[#FFCB3D] shadow-sm">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center gap-3">
             <img
               src="/images/logo-mercado-gold-link.png"
-              alt="Mercado Gold Link"
+              alt="Mercado Gold Link — página inicial"
               className="h-12 w-auto rounded-lg"
             />
           </a>
@@ -34,17 +35,16 @@ export default function QuemSomosPage() {
         </div>
       </header>
 
-      <section className="max-w-3xl mx-auto px-4 py-16 sm:py-24 text-center">
-        <span className="inline-block rounded-full bg-[#FFE600] px-4 py-1.5 text-xs font-black uppercase tracking-widest text-[#0F172A]">
+      <section className="max-w-3xl mx-auto px-4 py-16 sm:py-24 text-center flex-1">
+        <span className="inline-block rounded-full bg-[#FFCB3D] px-4 py-1.5 text-xs font-black uppercase tracking-widest text-[#0F172A]">
           Quem Somos
         </span>
         <h1 className="mt-5 text-4xl sm:text-5xl font-black tracking-tight text-[#0F172A]">
-          <span className="text-[#1565C0]">Gold</span> <span className="text-[#FF6F00]">Link</span>
+          Mercado <span className="text-[#1565C0]">Gold</span> <span className="text-[#FF6F00]">Link</span>
         </h1>
         <p className="mt-6 text-lg sm:text-xl leading-relaxed text-slate-700 text-pretty">
-          Gold Link é uma plataforma que facilita a sua compra: buscamos as melhores promoções
-          para você economizar dinheiro no seu bolso, trabalhamos apenas com fornecedores bem
-          avaliados e que fornecem frete grátis.
+          O Mercado Gold Link é uma plataforma independente que facilita a sua compra: buscamos promoções no Mercado
+          Livre e reunimos tudo em um só lugar para você economizar.
         </p>
         <p className="mt-8 text-2xl sm:text-3xl font-black text-[#0F172A]">
           Porque o seu tempo vale <span className="text-[#F0B000]">ouro</span>!
@@ -53,7 +53,7 @@ export default function QuemSomosPage() {
         <div className="mt-14 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
           {PILARES.map(({ icon: Icon, titulo, texto }) => (
             <div key={titulo} className="rounded-2xl bg-white border border-black/5 p-5 shadow-sm">
-              <div className="w-11 h-11 rounded-xl bg-[#FFE600] flex items-center justify-center">
+              <div className="w-11 h-11 rounded-xl bg-[#FFCB3D] flex items-center justify-center">
                 <Icon className="w-5 h-5 text-[#1565C0]" />
               </div>
               <h2 className="mt-3 font-bold text-[#0F172A]">{titulo}</h2>
@@ -61,7 +61,25 @@ export default function QuemSomosPage() {
             </div>
           ))}
         </div>
+
+        <div className="mt-12 rounded-2xl bg-white border border-[#1565C0]/20 p-6 text-left">
+          <h2 className="font-bold text-[#0F172A]">Como funcionamos</h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-700 text-pretty">{AFFILIATE_DISCLOSURE}</p>
+        </div>
+
+        <div className="mt-6 rounded-2xl bg-white border border-[#1565C0]/20 p-6 text-left">
+          <h2 className="font-bold text-[#0F172A]">Contato</h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            O Mercado Gold Link é mantido por {CONTACT_NAME}. Dúvidas, sugestões ou solicitações sobre seus dados podem
+            ser enviadas para{' '}
+            <a href={`mailto:${CONTACT_EMAIL}`} className="font-semibold text-[#1565C0] underline underline-offset-2">
+              {CONTACT_EMAIL}
+            </a>
+            .
+          </p>
+        </div>
       </section>
+      <SiteFooter />
     </main>
   );
 }

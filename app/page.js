@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import SiteFooter, { AffiliateNotice } from '@/components/site-footer';
 import { motion } from 'framer-motion';
 import {
   Zap,
@@ -159,14 +160,14 @@ function Header() {
           : 'shadow-sm border-b border-white/20'
       }`}
       style={{
-        background: '#FFE600',
+        background: '#FFCB3D',
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <a href="#" className="flex items-center gap-3">
             <img
               src="/images/logo-mercado-gold-link.png"
-              alt="Mercado Gold Link"
+              alt="Mercado Gold Link — página inicial"
               className="h-12 sm:h-14 w-auto rounded-lg"
             />
             <span className="flex flex-col leading-none">
@@ -207,7 +208,7 @@ function Header() {
       {menuOpen && (
         <nav
           id="menu-mobile"
-          className="md:hidden border-t border-black/10 bg-[#FFE600] px-4 pb-4"
+          className="md:hidden border-t border-black/10 bg-[#FFCB3D] px-4 pb-4"
         >
           {NAV_LINKS.map((l) => (
             <a
@@ -701,7 +702,7 @@ function ProductCard({ p, index }) {
         )}
 
         <button className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-[#1565C0] hover:bg-[#0d47a1] text-white text-sm font-bold py-2.5 rounded-lg transition-all group-hover:shadow-lg">
-          Ir para Oferta
+          Ver no Mercado Livre
           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
         </button>
       </div>
@@ -731,7 +732,7 @@ function Promocoes({ products, loading }) {
               Promoções <span className="text-[#FF6F00]">Imperdíveis</span>
             </h2>
             <p className="mt-2 text-slate-600">
-              Descontos verificados agora mesmo no Mercado Livre.
+              Descontos consultados no Mercado Livre. Os preços podem mudar.
             </p>
           </div>
           {featured.length > 0 && (
@@ -1037,21 +1038,13 @@ function App() {
     <main className="min-h-screen">
       <Header />
       <Hero products={products} banner={banner} />
+      <AffiliateNotice />
       <CountdownBanner />
       <Promocoes products={products} loading={loading} />
       <MaisVendidos products={products} loading={loading} />
       <Categorias products={products} loading={loading} />
 
-      <section className="py-10 bg-[#0F172A] text-white/70 text-center text-sm">
-        <div className="max-w-7xl mx-auto px-4">
-          <img
-            src="/images/logo-mercado-gold-link.png"
-            alt="Mercado Gold Link"
-            className="h-16 w-auto rounded-xl mx-auto"
-          />
-          <p className="mt-2">© 2025 Mercado Gold Link — Afiliado Mercado Livre. Todos os preços sujeitos a alteração.</p>
-        </div>
-      </section>
+      <SiteFooter />
     </main>
   );
 }
