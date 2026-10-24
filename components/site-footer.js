@@ -1,3 +1,6 @@
+export const CONTACT_NAME = 'Marcelo Costa';
+export const CONTACT_EMAIL = 'terra_continental7@hotmail.com';
+
 export const AFFILIATE_DISCLOSURE =
   'O Mercado Gold Link é uma plataforma independente de divulgação de ofertas. Não somos o site oficial do Mercado Livre e não temos vínculo societário com ele. Participamos do programa de afiliados do Mercado Livre: ao comprar pelos nossos links, podemos receber uma comissão, sem custo adicional para você. A compra, o pagamento e a entrega são feitos diretamente no site do Mercado Livre.';
 
@@ -30,6 +33,13 @@ export default function SiteFooter() {
             </a>
           ))}
         </nav>
+        <address className="not-italic leading-relaxed">
+          <span className="block font-semibold text-white">Contato</span>
+          Responsável: {CONTACT_NAME} ·{' '}
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-white hover:text-[#FFCB3D] underline underline-offset-2">
+            {CONTACT_EMAIL}
+          </a>
+        </address>
         <p className="max-w-3xl text-pretty leading-relaxed">{AFFILIATE_DISCLOSURE}</p>
         <p className="max-w-3xl text-pretty leading-relaxed text-white/60">
           Preços, descontos, avaliações e condições de frete são consultados no Mercado Livre e podem mudar a qualquer

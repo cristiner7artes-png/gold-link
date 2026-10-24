@@ -1,5 +1,5 @@
 import { ArrowLeft, BadgePercent, ShieldCheck, Truck } from 'lucide-react';
-import SiteFooter, { AFFILIATE_DISCLOSURE } from '@/components/site-footer';
+import SiteFooter, { AFFILIATE_DISCLOSURE, CONTACT_EMAIL, CONTACT_NAME } from '@/components/site-footer';
 
 export const metadata = {
   title: 'Quem Somos — Mercado Gold Link',
@@ -65,6 +65,18 @@ export default function QuemSomosPage() {
         <div className="mt-12 rounded-2xl bg-white border border-[#1565C0]/20 p-6 text-left">
           <h2 className="font-bold text-[#0F172A]">Como funcionamos</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-700 text-pretty">{AFFILIATE_DISCLOSURE}</p>
+        </div>
+
+        <div className="mt-6 rounded-2xl bg-white border border-[#1565C0]/20 p-6 text-left">
+          <h2 className="font-bold text-[#0F172A]">Contato</h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            O Mercado Gold Link é mantido por {CONTACT_NAME}. Dúvidas, sugestões ou solicitações sobre seus dados podem
+            ser enviadas para{' '}
+            <a href={`mailto:${CONTACT_EMAIL}`} className="font-semibold text-[#1565C0] underline underline-offset-2">
+              {CONTACT_EMAIL}
+            </a>
+            .
+          </p>
         </div>
       </section>
       <SiteFooter />
