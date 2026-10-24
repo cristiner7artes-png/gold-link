@@ -76,7 +76,7 @@ export default function RobotCategoryTools({ token, categorias, porCategoria, di
       setFixMsg({
         tipo: soma.semConserto.length ? 'aviso' : 'ok',
         texto: soma.verificadas
-          ? `${soma.verificadas} ofertas incompletas verificadas: ${soma.consertadas} consertadas e ${soma.trocadas} do robô trocadas por ofertas completas da mesma categoria.`
+          ? `${soma.verificadas} ofertas incompletas verificadas: ${soma.consertadas} consertadas no lugar. Nenhuma oferta foi trocada ou removida.`
           : 'Todas as ofertas já têm selo, nome, preço, desconto, estrelas, avaliações e frete grátis.',
         itens: soma.semConserto.map((s) => `${s.nome} (${s.categoria}) — falta: ${s.faltam.join(', ')}`),
       });
@@ -173,7 +173,7 @@ export default function RobotCategoryTools({ token, categorias, porCategoria, di
               <Wrench className="w-5 h-5 text-[#1565C0]" /> Consertador de ofertas
             </h3>
             <p className="text-sm text-slate-500 mt-1 text-pretty">
-              Completa as ofertas sem selo, nome, preço, desconto, estrelas, avaliações ou frete grátis com dados do Mercado Livre. Ofertas do robô sem conserto são trocadas na mesma categoria.
+              Completa as ofertas sem selo, nome, preço, desconto, estrelas, avaliações ou frete grátis com dados do Mercado Livre, sem trocar nem remover nenhuma oferta.
             </p>
           </div>
           <button type="button" onClick={consertar} disabled={ocupado || disabled}
