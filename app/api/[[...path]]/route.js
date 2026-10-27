@@ -3,7 +3,16 @@ import { getStore } from '@netlify/blobs';
 import productsData from '../../../products.json';
 import { getProductsCollection } from '../../../lib/mongodb';
 import { runRobot, deleteOffers, fixOffers, getConfig, saveConfig, getLogs, getMetrics } from '../../../lib/robot';
-import { hasMlCredentials, PLATFORM_CATEGORIES as ALL_CATEGORIES } from '../../../lib/mercadolivre';
+import { hasMlCredentials, ensureAffiliateLink, PLATFORM_CATEGORIES as ALL_CATEGORIES } from '../../../lib/mercadolivre';
+
+// Garante matt_word e matt_tool em todo link salvo pelo painel.
+async function affiliateLinkFields(rawLink) {
+  const link = String(rawLink || '').trim();
+  if (!link) return { link: '' };
+  const cfg = await getConfig().catch(() => ({}));
+  const fixed = await ensureAffiliateLink(link, cfg?.afiliado);
+  return { link: fixed.link || link, linkVerificado: !!fixed.verificado };
+}
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -106,7 +115,7 @@ async function handleCreateProduct(request) {
       rating: Number(body.rating) || 0,
       reviews: Number(body.reviews) || 0,
       freteGratis: Boolean(body.freteGratis),
-      link: String(body.link || '').trim(),
+      ...(await affiliateLinkFields(body.link)),
       badge: body.badge || null,
       createdAt: now,
       updatedAt: now,
@@ -148,7 +157,7 @@ async function handleUpdateProduct(request, id) {
       rating: Number(body.rating) || 0,
       reviews: Number(body.reviews) || 0,
       freteGratis: Boolean(body.freteGratis),
-      link: String(body.link || '').trim(),
+      ...(await affiliateLinkFields(body.link)),
       badge: body.badge || null,
       updatedAt: new Date().toISOString(),
     };
