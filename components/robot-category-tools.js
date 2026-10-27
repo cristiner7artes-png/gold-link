@@ -59,7 +59,7 @@ export default function RobotCategoryTools({ token, categorias, porCategoria, di
     const desde = new Date().toISOString();
     const soma = { verificadas: 0, consertadas: 0, trocadas: 0, semConserto: [] };
     try {
-      for (let rodada = 0; rodada < 15; rodada++) {
+      for (let rodada = 0; rodada < 200; rodada++) {
         const r = await fetch('/api/admin/robot/fix', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...auth },

@@ -137,6 +137,7 @@ function CarrinhoCheio({ className }) {
 /* ------------------ HEADER ------------------ */
 const NAV_LINKS = [
   { href: '#inicio', label: 'Início' },
+  { href: '#buscar', label: 'Pesquisar' },
   { href: '#promocoes', label: 'Promoções' },
   { href: '#mais-vendidos', label: 'Mais Vendidos' },
   { href: '#categorias', label: 'Categorias' },
@@ -1001,6 +1002,91 @@ function Categorias({ products, loading }) {
   );
 }
 
+/* ------------------ BUSCA ------------------ */
+function normalizar(texto) {
+  return String(texto || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function BuscaProdutos({ products, loading }) {
+  const [termo, setTermo] = useState('');
+  const palavras = normalizar(termo).split(/\s+/).filter(Boolean);
+  const resultados = palavras.length
+    ? (products || []).filter((p) => {
+        const alvo = normalizar(`${p.nome} ${p.categoria || ''}`);
+        return palavras.every((w) => alvo.includes(w));
+      })
+    : [];
+
+  return (
+    <section id="buscar" className="scroll-mt-24 bg-[#F8FAFC] py-12" aria-labelledby="buscar-titulo">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h2 id="buscar-titulo" className="text-2xl sm:text-3xl font-extrabold text-[#0F172A]">
+          Pesquisar produtos
+        </h2>
+        <form
+          role="search"
+          className="mt-5"
+          onSubmit={(e) => e.preventDefault()}
+        >
+          <label htmlFor="busca-produto" className="sr-only">
+            Nome do produto
+          </label>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+            <input
+              id="busca-produto"
+              type="text"
+              inputMode="search"
+              enterKeyHint="search"
+              value={termo}
+              onChange={(e) => setTermo(e.target.value)}
+              placeholder="Ex.: fone bluetooth, air fryer, tênis..."
+              autoComplete="off"
+              className="h-14 w-full rounded-2xl border border-slate-200 bg-white pl-12 pr-12 text-base text-[#0F172A] shadow-sm outline-none transition focus:border-[#1565C0] focus:ring-4 focus:ring-[#1565C0]/15"
+            />
+            {termo && (
+              <button
+                type="button"
+                onClick={() => setTermo('')}
+                aria-label="Limpar pesquisa"
+                className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+        </form>
+
+        {palavras.length > 0 && (
+          <div className="mt-8" aria-live="polite">
+            <p className="mb-5 text-sm font-semibold text-slate-600">
+              {loading
+                ? 'Carregando produtos...'
+                : `${resultados.length} ${resultados.length === 1 ? 'resultado' : 'resultados'} para "${termo.trim()}"`}
+            </p>
+            {!loading && resultados.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {resultados.slice(0, 60).map((p, i) => (
+                  <ProductCard key={p.id} p={p} index={i} />
+                ))}
+              </div>
+            ) : !loading ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
+                <ShoppingBag className="mx-auto mb-3 h-10 w-10 text-slate-400" />
+                <p className="font-bold text-[#0F172A]">Nenhum produto encontrado</p>
+                <p className="mt-1 text-sm text-slate-500">Tente outra palavra ou escolha uma categoria abaixo.</p>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /* ------------------ PAGE ------------------ */
 function App() {
   const [products, setProducts] = useState([]);
@@ -1039,6 +1125,7 @@ function App() {
       <Header />
       <Hero products={products} banner={banner} />
       <AffiliateNotice />
+      <BuscaProdutos products={products} loading={loading} />
       <CountdownBanner />
       <Promocoes products={products} loading={loading} />
       <MaisVendidos products={products} loading={loading} />
