@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import SiteFooter, { AffiliateNotice } from '@/components/site-footer';
+import ReviewsSection from '@/components/reviews-section';
 import { motion } from 'framer-motion';
 import {
   Zap,
@@ -141,6 +142,7 @@ const NAV_LINKS = [
   { href: '#promocoes', label: 'Promoções' },
   { href: '#mais-vendidos', label: 'Mais Vendidos' },
   { href: '#categorias', label: 'Categorias' },
+  { href: '#avaliacoes', label: 'Avaliações' },
   { href: '/quem-somos', label: 'Quem Somos' },
 ];
 
@@ -1130,6 +1132,7 @@ function App() {
       <Promocoes products={products} loading={loading} />
       <MaisVendidos products={products} loading={loading} />
       <Categorias products={products} loading={loading} />
+      <ReviewsSection />
 
       <SiteFooter />
     </main>
