@@ -74,7 +74,7 @@
         "@types/lodash": "4.17.24",
         "autoprefixer": "10.4.19",
         "globals": "16.2.0",
-        "postcss": "8",
+        "postcss": "8.5.18",
         "tailwindcss": "3.4.1"
     },
     "resolutions": {
@@ -92,7 +92,6 @@
     },
     "overrides": {
         "follow-redirects": "1.16.2",
-        "postcss": "8.5.18",
         "sharp": "0.35.5",
         "source-map-js": "1.2.2",
         "undici": "7.30.1",
