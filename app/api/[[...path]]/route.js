@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getStore } from '@netlify/blobs';
 import productsData from '../../../products.json';
-import { getProductsCollection } from '../../../lib/mongodb';
+import { getProductsCollection, getCollection } from '../../../lib/mongodb';
 import { runRobot, deleteOffers, fixOffers, getConfig, saveConfig, getLogs, getMetrics } from '../../../lib/robot';
 import { hasMlCredentials, ensureAffiliateLink, PLATFORM_CATEGORIES as ALL_CATEGORIES } from '../../../lib/mercadolivre';
 
@@ -960,6 +960,97 @@ async function handleCronRobot() {
   }
 }
 
+/* ---------- Avaliações ---------- */
+
+function cleanText(value, max) {
+  return String(value || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
+function publicReview(r) {
+  return {
+    id: r.id,
+    nome: r.nome,
+    cidade: r.cidade || '',
+    produto: r.produto || '',
+    nota: r.nota,
+    comentario: r.comentario,
+    criadoEm: r.criadoEm,
+    ...(r.status ? { status: r.status } : {}),
+  };
+}
+
+async function handleListReviews() {
+  const col = await getCollection('reviews');
+  const docs = await col.find({ status: 'aprovada' }).sort({ criadoEm: -1 }).limit(30).toArray();
+  return ok(docs.map(({ status, ...r }) => publicReview(r)));
+}
+
+async function handleCreateReview(request) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return err('Dados inválidos');
+  }
+  // Campo-armadilha: robôs de spam preenchem, pessoas não veem.
+  if (body?.site) return ok({ ok: true }, 201);
+
+  const nome = cleanText(body?.nome, 60);
+  const cidade = cleanText(body?.cidade, 60);
+  const produto = cleanText(body?.produto, 120);
+  const comentario = cleanText(body?.comentario, 600);
+  const nota = Number(body?.nota);
+
+  if (nome.length < 2) return err('Informe seu nome');
+  if (!Number.isInteger(nota) || nota < 1 || nota > 5) return err('Escolha uma nota de 1 a 5 estrelas');
+  if (comentario.length < 10) return err('Escreva um comentário com pelo menos 10 caracteres');
+  if (!body?.comprou) return err('Confirme que comprou um produto pelo site');
+
+  const col = await getCollection('reviews');
+  const ip = (request.headers.get('x-forwarded-for') || '').split(',')[0].trim();
+  if (ip) {
+    const recentes = await col.countDocuments({ ip, criadoEm: { $gt: new Date(Date.now() - 60 * 60 * 1000).toISOString() } });
+    if (recentes >= 3) return err('Você já enviou avaliações recentemente. Tente mais tarde.', 429);
+  }
+
+  await col.insertOne({
+    id: globalThis.crypto?.randomUUID?.() ?? String(Date.now()),
+    nome,
+    cidade,
+    produto,
+    nota,
+    comentario,
+    status: 'pendente',
+    ip,
+    criadoEm: new Date().toISOString(),
+  });
+  return ok({ ok: true }, 201);
+}
+
+async function handleAdminListReviews(request) {
+  if (!isAuthed(request)) return err('Não autorizado', 401);
+  const col = await getCollection('reviews');
+  const docs = await col.find({}).sort({ criadoEm: -1 }).limit(200).toArray();
+  return ok(docs.map(publicReview));
+}
+
+async function handleAdminUpdateReview(request, id) {
+  if (!isAuthed(request)) return err('Não autorizado', 401);
+  const body = await request.json().catch(() => ({}));
+  const status = body?.status === 'aprovada' ? 'aprovada' : 'pendente';
+  const col = await getCollection('reviews');
+  const res = await col.updateOne({ id }, { $set: { status } });
+  if (!res.matchedCount) return err('Avaliação não encontrada', 404);
+  return ok({ ok: true });
+}
+
+async function handleAdminDeleteReview(request, id) {
+  if (!isAuthed(request)) return err('Não autorizado', 401);
+  const col = await getCollection('reviews');
+  await col.deleteOne({ id });
+  return ok({ ok: true });
+}
+
 /* ---------- Router ---------- */
 
 async function router(request, context) {
@@ -987,6 +1078,15 @@ async function router(request, context) {
     if (path === 'admin/robot/pause' && method === 'POST') return handleRobotToggle(request, false);
     if (path === 'admin/robot/resume' && method === 'POST') return handleRobotToggle(request, true);
     if (path === 'cron/robot' && method === 'GET') return handleCronRobot();
+
+    if (path === 'reviews' && method === 'GET') return handleListReviews();
+    if (path === 'reviews' && method === 'POST') return handleCreateReview(request);
+    if (path === 'admin/reviews' && method === 'GET') return handleAdminListReviews(request);
+    if (path.startsWith('admin/reviews/')) {
+      const reviewId = decodeURIComponent(path.slice('admin/reviews/'.length));
+      if (reviewId && (method === 'PUT' || method === 'PATCH')) return handleAdminUpdateReview(request, reviewId);
+      if (reviewId && method === 'DELETE') return handleAdminDeleteReview(request, reviewId);
+    }
 
     if (path === 'banner' && method === 'GET') return handleGetBanner();
     if (path === 'banner' && (method === 'PUT' || method === 'POST')) return handleSaveBanner(request);
